@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plugin Database</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #18181f;
+    --border: #2a2a3a;
+    --accent: #7c3aed;
+    --accent2: #06b6d4;
+    --accent3: #f59e0b;
+    --text: #e8e8f0;
+    --muted: #6b6b80;
+    --mono: #3f3f60;
+    --stereo: #1a3a2a;
+    --quad: #3a1a1a;
+    --five: #1a2a3a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(124,58,237,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,58,237,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 0 24px; }
+
+  /* HEADER */
+  header {
+    padding: 40px 0 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .header-top {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 8px;
+  }
+
+  .logo-badge {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 10px;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  h1 {
+    font-size: clamp(28px, 5vw, 48px);
+    font-weight: 800;
+    letter-spacing: -1px;
+    background: linear-gradient(135deg, #fff 0%, var(--accent2) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+
+  /* STATS BAR */
+  .stats-bar {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+
+  .stat {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+  }
+
+  .stat-num {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--accent2);
+  }
+
+  .stat-label { color: var(--muted); }
+
+  /* SEARCH */
+  .search-section {
+    padding: 24px 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .search-wrapper {
+    position: relative;
+    max-width: 700px;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 18px;
+    pointer-events: none;
+  }
+
+  #searchInput {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px 14px 48px;
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  #searchInput:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(124,58,237,0.15);
+  }
+
+  #searchInput::placeholder { color: var(--muted); }
+
+  #searchCount {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  /* FILTERS */
+  .filters {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+    align-items: center;
+  }
+
+  .filter-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-right: 4px;
+  }
+
+  .filter-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .filter-btn:hover { border-color: var(--accent); color: var(--text); }
+
+  .filter-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  .filter-btn.mono-filter.active { background: #4a1d96; border-color: #7c3aed; color: #c4b5fd; }
+  .filter-btn.stereo-filter.active { background: #064e3b; border-color: #10b981; color: #6ee7b7; }
+  .filter-btn.multi-filter.active { background: #7c2d12; border-color: #f97316; color: #fdba74; }
+
+  /* VENDOR GRID */
+  .vendors-section { padding: 32px 0; }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .section-title {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+  }
+
+  .section-line { flex: 1; height: 1px; background: var(--border); }
+
+  .vendors-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 16px;
+  }
+
+  /* VENDOR CARD */
+  .vendor-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+
+  .vendor-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .vendor-card.hidden { display: none; }
+
+  .vendor-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    cursor: pointer;
+    user-select: none;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+
+  .vendor-header:hover { background: var(--surface2); }
+
+  .vendor-left { display: flex; align-items: center; gap: 10px; }
+
+  .vendor-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .vendor-name {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+
+  .vendor-right { display: flex; align-items: center; gap: 8px; }
+
+  .vendor-count {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2px 8px;
+    color: var(--muted);
+  }
+
+  .vendor-toggle {
+    color: var(--muted);
+    font-size: 14px;
+    transition: transform 0.2s;
+  }
+
+  .vendor-card.expanded .vendor-toggle { transform: rotate(180deg); }
+
+  /* PLUGIN LIST */
+  .plugin-list {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+  }
+
+  .vendor-card.expanded .plugin-list { max-height: 9999px; }
+
+  .plugin-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    transition: background 0.1s;
+    gap: 8px;
+  }
+
+  .plugin-item:last-child { border-bottom: none; }
+  .plugin-item:hover { background: var(--surface2); }
+  .plugin-item.hidden-item { display: none; }
+
+  .plugin-name {
+    font-size: 13px;
+    color: var(--text);
+    flex: 1;
+    font-weight: 500;
+  }
+
+  .plugin-name mark {
+    background: rgba(124,58,237,0.4);
+    color: #c4b5fd;
+    border-radius: 3px;
+    padding: 0 1px;
+  }
+
+  .tag-row { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+
+  .tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    font-weight: 700;
+  }
+
+  .tag-mono { background: rgba(124,58,237,0.15); color: #a78bfa; border: 1px solid rgba(124,58,237,0.2); }
+  .tag-stereo { background: rgba(16,185,129,0.1); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.2); }
+  .tag-ms { background: rgba(245,158,11,0.1); color: #fcd34d; border: 1px solid rgba(245,158,11,0.2); }
+  .tag-51 { background: rgba(239,68,68,0.1); color: #fca5a5; border: 1px solid rgba(239,68,68,0.2); }
+  .tag-50 { background: rgba(249,115,22,0.1); color: #fdba74; border: 1px solid rgba(249,115,22,0.2); }
+  .tag-71 { background: rgba(6,182,212,0.1); color: #67e8f9; border: 1px solid rgba(6,182,212,0.2); }
+  .tag-quad { background: rgba(236,72,153,0.1); color: #f9a8d4; border: 1px solid rgba(236,72,153,0.2); }
+  .tag-live { background: rgba(132,204,22,0.1); color: #bef264; border: 1px solid rgba(132,204,22,0.2); }
+
+  /* NO RESULTS */
+  .no-results {
+    display: none;
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-size: 14px;
+    grid-column: 1 / -1;
+  }
+  .no-results.visible { display: block; }
+
+  /* VENDOR HIDDEN */
+  .vendor-section-hidden { display: none !important; }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+  /* LEGEND */
+  .legend {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+    align-items: center;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  @media (max-width: 600px) {
+    .vendors-grid { grid-template-columns: 1fr; }
+    .stats-bar { gap: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <!-- HEADER -->
+  <header>
+    <div class="header-top">
+      <div class="logo-badge">🎛</div>
+      <div>
+        <h1>Plugin Database</h1>
+        <div class="subtitle">FL Studio · Professional Plugin Registry</div>
+      </div>
+    </div>
+    <div class="stats-bar" id="statsBar">
+      <!-- filled by JS -->
+    </div>
+  </header>
+
+  <!-- SEARCH -->
+  <div class="search-section">
+    <div class="search-wrapper">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="searchInput" placeholder="Search plugins, vendors…" autocomplete="off" spellcheck="false">
+      <span id="searchCount"></span>
+    </div>
+    <div class="filters">
+      <span class="filter-label">Filter:</span>
+      <button class="filter-btn active" data-filter="all">All</button>
+      <button class="filter-btn mono-filter" data-filter="mono">Mono</button>
+      <button class="filter-btn stereo-filter" data-filter="stereo">Stereo</button>
+      <button class="filter-btn multi-filter" data-filter="5.0">5.0</button>
+      <button class="filter-btn multi-filter" data-filter="5.1">5.1</button>
+      <button class="filter-btn multi-filter" data-filter="7.1">7.1</button>
+      <button class="filter-btn multi-filter" data-filter="quad">Quad</button>
+      <button class="filter-btn multi-filter" data-filter="live">Live</button>
+      <button class="filter-btn multi-filter" data-filter="ms">Mono-Stereo</button>
+    </div>
+    <div class="legend">
+      <span class="legend-item"><span class="tag tag-mono">M</span> Mono</span>
+      <span class="legend-item"><span class="tag tag-stereo">S</span> Stereo</span>
+      <span class="legend-item"><span class="tag tag-ms">M-S</span> Mono-Stereo</span>
+      <span class="legend-item"><span class="tag tag-50">5.0</span> 5.0</span>
+      <span class="legend-item"><span class="tag tag-51">5.1</span> 5.1</span>
+      <span class="legend-item"><span class="tag tag-71">7.1</span> 7.1</span>
+      <span class="legend-item"><span class="tag tag-quad">Q</span> Quad</span>
+      <span class="legend-item"><span class="tag tag-live">Live</span> Live</span>
+    </div>
+  </div>
+
+  <!-- VENDOR SECTIONS -->
+  <div class="vendors-section">
+    <div class="section-header">
+      <span class="section-title">Vendors</span>
+      <div class="section-line"></div>
+      <span id="vendorVisibleCount" style="font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);"></span>
+    </div>
+    <div class="vendors-grid" id="vendorsGrid">
+      <div class="no-results" id="noResults">No plugins found matching your search.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── PLUGIN DATA ───────────────────────────────────────────────────────────────
+const DATA = {
+  "Waves": [
+    // Abbey Road
+    "Abbey Road Chambers Mono","Abbey Road Chambers Stereo","Abbey Road C Mono-Stereo",
+    "Abbey Road E.2345 Mono","Abbey Road E.345 Stereo","Abbey Road J37 Tape Mono","Abbey Road J37 Tape Stereo",
+    "Abbey Road Plates Mono","Abbey Road Plates Stereo","Abbey Road REDD.17 Mono","Abbey Road REDD.17 Stereo",
+    "Abbey Road R-37.51 Mono","Abbey Road R-37.51 Stereo","Abbey Road R.DT Live Mono","Abbey Road R.DT Live Stereo",
+    "Abbey Road Re-Mono Stereo","Abbey Road Reel ADT Mono","Abbey Road Reel ADT Stereo",
+    "Abbey Road RS124 Mono","Abbey Road RS124 Stereo","Abbey Road S... EQ Stereo",
+    "Abbey Road Saturator Mono","Abbey Road Saturator Stereo","Abbey Road Studio 3 Mono","Abbey Road Studio 3 Stereo",
+    "Abbey Road TG Live Mono","Abbey Road TG Live Stereo","Abbey Road TG Mastering Chain Mono","Abbey Road TG Mastering Chain Stereo",
+    "Abbey Road TG Bridge Mono","Abbey Road TG Bridge Stereo","Abbey Road TG Phones Mono","Abbey Road TG Phones Stereo",
+    "Abbey Road Vinyl Mono","Abbey Road Vinyl Stereo",
+    // Aphex / API
+    "Aphex Vintage Exciter Mono","Aphex Vintage Exciter Stereo",
+    "API 2500 Mono","API 2500 Stereo","API 550A Mono","API 550A Stereo","API 550B Mono","API 550B Stereo",
+    "API 560 Mono","API 560 Stereo","AudioTrack Mono","AudioTrack Stereo",
+    // B360
+    "B360 AmbiX FuMa Quad","B360 FuMa AmbiX Quad","B360 Mono Quad","B360 Stereo Quad",
+    "B360 5.0 Quad","B360 5.1 Quad","B360 7.1 Quad",
+    // Bass / Berzerk / Brauer / Butch
+    "Bass Rider Mono","Bass Rider Stereo","Bass Rider Live Mono","Bass Rider Live Stereo",
+    "Bass Slapper Stereo","Berzerk Distortion Mono","Berzerk Distortion Stereo",
+    "Brauer Motion Mono-Stereo","Brauer Motion Stereo","Butch Vig Vocals Mono","Butch Vig Vocals Stereo",
+    // C series
+    "C1 Comp Mono","C1 Comp Stereo","C1 Comp-Gate Mono","C1 Comp-Gate Stereo","C1 Comp-SC Mono","C1 Comp-SC Stereo",
+    "C1 Gate Mono","C1 Gate Stereo","C360 5.0","C360 5.1","C4 Mono","C4 Stereo","C6 Mono","C6 Stereo",
+    "C6 SideChain Mono","C6 SideChain Stereo","Center Stereo",
+    // CLA
+    "CLA-2A Mono","CLA-2A Stereo","CLA Bass Mono-Stereo","CLA Bass Stereo",
+    "CLA Drums Mono-Stereo","CLA Drums Stereo","CLA EchoSphere Mono-Stereo","CLA EchoSphere Stereo",
+    "CLA Effects Mono-Stereo","CLA Effects Stereo","CLA Epic Mono-Stereo","CLA Epic Stereo",
+    "CLA Guitars Mono-Stereo","CLA Guitars Stereo","CLA MixDown Mono","CLA MixDown Stereo",
+    "CLA MixHub Mono","CLA MixHub Stereo","CLA MixHub Lite Mono","CLA MixHub Lite Stereo",
+    "CLA NS Stereo","CLA Unplugged Mono-Stereo","CLA Unplugged Stereo","CLA Vocals Mono-Stereo","CLA Vocals Stereo",
+    "CLA-3A Mono","CLA-3A Stereo","CLA-76 Mono","CLA-76 Stereo",
+    // Clarity / Clavinet / CODEX
+    "Clarity Vx Mono","Clarity Vx Stereo","Clarity Vx Pro Mono","Clarity Vx Pro Stereo",
+    "Clarity Vx DeReverb Mono","Clarity Vx DeReverb Stereo","Clarity Vx DeReverb Pro Mono","Clarity Vx DeReverb Pro Stereo",
+    "Clavinet Stereo","CODEx Stereo","COSMOS Sample Finder Stereo","CR8 Sampler Stereo",
+    // Curves / dbx / DeBreath / DeEsser / Doppler / Doubler / DPR
+    "Curves AQ Mono","Curves AQ Stereo","Curves AQ Live Mono","Curves AQ Live Stereo",
+    "Curves Equator Mono","Curves Equator Stereo","Curves Equator Live Mono","Curves Equator Live Stereo",
+    "dbx 160 Mono","dbx 160 Stereo","DeBreath Mono","DeEsser Mono","DeEsser Stereo",
+    "Doppler Mono-Stereo","Doppler Stereo","Doubler Mono-Stereo","Doubler Stereo",
+    "DPR-402 Mono","DPR-402 Stereo",
+    // Doubler2/4
+    "Doubler2 Mono","Doubler2 Mono-Stereo","Doubler2 Stereo","Doubler4 Mono","Doubler4 Mono-Stereo","Doubler4 Stereo",
+    // DTS
+    "DTS Neural DownMix 0.5.1 Stereo","DTS Neural DownMix 5.1 to 5.1","DTS Neural DownMix 7.1 Stereo",
+    "DTS Neural DownMix 5.1 to 2.1","DTS Neural DownMix 7.1 to 7.1","DTS Neural Mono Decoder",
+    "DTS Neural UpMix 5.1 to 7.1","DTS Neural UpMix Stereo to 5.1","DTS Neural UpMix Stereo to 7.1","DTS Neural UpMix Stereo to Quad",
+    // EKramer / Electric / EMO / Dorough
+    "EKramer Bass Mono","EKramer Bass Stereo","EKramer Drum Mono","EKramer Drum Stereo",
+    "EKramer FX Mono-Stereo","EKramer FX Stereo","EKramer GT Mono-Stereo","EKramer GT Stereo",
+    "EKramer VC Mono-Stereo","EKramer VC Stereo","Electric Grand 80 Stereo","Electric 200 Stereo","Electric 88 Stereo",
+    "Element Stereo","EMO-D5 Mono","EMO-D5 Stereo","Dorough 360 5.0","Dorough 360 5.1",
+    // EMO F/G/Q
+    "EMO F2","EMO Generator","EMO Q4","Enigma","F6","F6 RTA",
+    // Feedback / Flow
+    "Feedback Hunter","Flow Motion",
+    // GEQ / Grand / GTR / GW
+    "GEQ Classic","GEQ Modern","Grand Rhapsody Piano","GTR Amp","GTR Tool Rack",
+    "GTR Stomp 2","GTR Stomp 4","GTR Stomp 6","GTR Solo Tool Rack","GTR Tuner",
+    "GW MixCentric","GW PianoCentric","GW ToneCentric","GW VoiceCentric",
+    // H series / IDR / Immersive
+    "H-Comp","H-Delay","H-EQ","H-EQ Light","H-Reverb","H-Reverb Long",
+    "IDR360","IDX Intelligent Dynamics","IDX Live Intelligent Dynamics","Immersive Wrapper",
+    // IM / InPhase / InTrigger / IR
+    "IM Pusher","InPhase","InPhase Live","InPhase LT","InPhase LT Live",
+    "InTrigger","InTrigger Live","IR1","IR1 Full","IR1 Efficient","IR-L",
+    "IR-Live","IR360",
+    // JJP / Kaleidoscopes / Key
+    "JJP Bass","JJP Cymbals & Percussion","JJP Drums","JJP Guitars","JJP Strings & Keys","JJP Vocals",
+    "Kaleidoscopes","Key Detector",
+    // K / L series
+    "Kramer HLS","Kramer PIE","Kramer Tape","L1 Limiter","L1 Ultramaximizer","L2","L2-SC",
+    "L3 Multimaximizer","L3 Ultramaximizer","L316","L360","L3-LL Multimaximizer","L3-LL Ultra",
+    "LFE360","LinEQ Broadband","LinEQ Lowband","LinMB","LoAir",
+    // LoFi / M series
+    "LoFi Space","M360 Manager","M360 Mixdown","Magma BB Tubes","Magma Channel Strip","Magma Lil Tube","Magma Springs",
+    "MannyM Delay","MannyM Distortion","MannyM EQ","MannyM Reverb","MannyM Tone Shaper","MannyM Triple D",
+    "Maserati ACG","Maserati B72","Maserati DRM","Maserati GRP","Maserati GTi","Maserati HMX","Maserati VX1",
+    "MaxxBass","MaxxVolume","MDMX Fuzz","MDMX Overdrive","MDMX Screamer","MetaFilter","MetaFlanger",
+    "MondoMod","Morphoder","MultiMod Rack","MV2","MV360",
+    // N / O / OneKnob
+    "NLS Buss","NLS Channel","NS1","Nx","Nx Ambisonics","Nx Germano Studios","Nx Ocean Way Nashville",
+    "OneKnob Brighter","OneKnob Driver","OneKnob Filter","OneKnob Louder","OneKnob Panner",
+    "OneKnob Pressure","OneKnob Pumper","OneKnob Wetter","OVox","OVox Instrument",
+    // PAZ / Playlist / PRS
+    "PAZ Analyzer","PAZ Frequency","PAZ Meters","PAZ Position","Playlist Rider","PRS Archon","PRS Dallas","PRS V9",
+    // PS / PSE / PuigChild / PuigTec / Q series
+    "PS22 Split","PS22 Spread","PS22 XSplit","PSE","PuigChild 660","PuigChild 670",
+    "PuigTec EQP1A","PuigTec MEQ5","Q10","Q2","Q3","Q4","Q6","Q8","Q-Clone","Q-Capture","R360",
+    // R / S series
+    "RBass","RChannel","RCompressor","RDeEsser","Renaissance Axx","REQ2","REQ4","REQ6",
+    "Retro Fi","RVerb","RVox","S1 Imager","S1 MS Matrix","S1 Shuffler","S360 Imager","S360 Panner",
+    "Saphira","Scheps 73","Scheps Omni Channel 2","Scheps Parallel Particles",
+    "Sibilance","Sibilance Live","Silk Vocal","Silk Vocal Live","Smack Attack",
+    "SoundShifter Pitch","Space Rider","Spherix Compressor","Spherix Limiter",
+    // SSL / Studio / Sub / SuperTap
+    "SSL EV2 Channel","SSL Channel","SSL Comp","SSL EQ","SSL G-Channel",
+    "StudioVerse Effects","StudioVerse Instruments","Sub Align","Submarine",
+    "SuperTap 2-Taps","SuperTap 6-Taps","Sync Vx","Torque","Torque Live",
+    // T / TRACT / TransX / TrueVerb
+    "TRACT","TransX Multi","TransX Wide","TrueVerb","UltraPitch","UM225","VComp","VEQ3",
+    // V / W / X / Z
+    "VEQ4","Vitamin","Vocal Bender","Vocal Rider","Voltage Amps","VU Meter",
+    "W43","Waves Gemstones","Waves Harmony","Waves Stream","Waves StudioRack",
+    "Waves Tune","Waves Tune Real-Time","WLM Meter","WLM Plus","WNS",
+    "X-Click","X-Crackle","X-FDBK","X-Hum","X-Noise","Z-Noise"
+  ],
+
+  "FabFilter": [
+    "FabFilter Micro","FabFilter One",
+    "FabFilter Pro-C","FabFilter Pro-C 2","FabFilter Pro-C 3",
+    "FabFilter Pro-DS","FabFilter Pro-G",
+    "FabFilter Pro-L","FabFilter Pro-L 2","FabFilter Pro-MB",
+    "FabFilter Pro-Q","FabFilter Pro-Q 2","FabFilter Pro-Q 3","FabFilter Pro-Q 4",
+    "FabFilter Pro-R","FabFilter Pro-R 2",
+    "FabFilter Saturn","FabFilter Saturn 2","FabFilter Simplon",
+    "FabFilter Timeless 2","FabFilter Timeless 3",
+    "FabFilter Twin 2","FabFilter Twin 3",
+    "FabFilter Volcano 2","FabFilter Volcano 3"
+  ],
+
+  "Image-Line": [
+    "3x Osc","Autogun","BassDrum","BeepMap","BooBass",
+    "Control Surface","Dashboard","DirectWave","Distructor",
+    "Drumaxx","Drumpad","Edison","Effector","Emphasis","EQUO",
+    "FL Keys","FL Slayer","FL Studio Mobile","FL Studio Mobile Rack","FL Studio Mobile Rack FX",
+    "FL Studio VSTi","FL Studio VSTi (Multi)","FLEX","FPC","Frequency Shifter","Frequency Splitter",
+    "Fruit Kick","Fruity 7 Band EQ","Fruity Balance","Fruity Bass Boost","Fruity Big Clock",
+    "Fruity Blood Overdrive","Fruity Center","Fruity Chorus","Fruity Compressor","Fruity Convolver",
+    "Fruity Dance","Fruity dB Meter","Fruity Delay","Fruity Delay 2","Fruity Delay 3","Fruity Delay Bank",
+    "Fruity DrumSynth Live","Fruity DX10","Fruity Envelope Controller","Fruity Fast Dist","Fruity Fast LP",
+    "Fruity Filter","Fruity Flanger","Fruity Flangus","Fruity Formula Controller","Fruity Free Filter",
+    "Fruity Granulizer","Fruity HTML NoteBook","Fruity Keyboard Controller","Fruity Limiter",
+    "Fruity Love Philter","Fruity LSD","Fruity Multiband Compressor","Fruity Mute 2",
+    "Fruity NoteBook","Fruity NoteBook 2","Fruity PanOMatic","Fruity Parametric EQ","Fruity Parametric EQ 2",
+    "Fruity Peak Controller","Fruity Phase Inverter","Fruity Phaser","Fruity Reeverb","Fruity Reeverb 2",
+    "Fruity Scratcher","Fruity Send","Fruity Slicer","Fruity Soft Clipper","Fruity Spectroman",
+    "Fruity Squeeze","Fruity Stereo Enhancer","Fruity Stereo Shaper","Fruity Video Player",
+    "Fruity Vocoder","Fruity Voltage Controller","Fruity WaveShaper","Fruity Wrapper",
+    "Fruity X-Y Controller","Fruity X-Y-Z Controller",
+    "GMS","Gross Beat","Hardcore","Harmless","Harmor","Hyper Chorus",
+    "Kepler","Kepler Exo","Low Lifter","Luxeverb","Maximus","MIDI Out","Minisynth","Morphine","Multiband Delay",
+    "Newtime","Newtone","Ogun","Patcher","Pitch Shifter","Pitched","Plucked!","PoiZone",
+    "Razer Chroma","ReWired","Sakura","Sawer","SimSynth","Slicex","Soundfont Player","Soundgoodizer",
+    "Spreader","Sytrus","Toxic Biohazard","Transient Processor","Transistor Bass","Transporter","Tuner",
+    "VFX Color Mapper","VFX Envelope","VFX Key Mapper","VFX Keyboard Splitter","VFX Level Scaler",
+    "VFX Script","VFX Sequencer","Vintage Chorus","Vintage Phaser","Vocodex",
+    "Wave Candy","Wave Traveller","ZGameEditor Visualizer"
+  ],
+
+  "Soundtoys": [
+    "Crystallizer","Decapitator","Devil-Loc","Devil-Loc Deluxe",
+    "EchoBoy","EffectRack","FilterFreak1","FilterFreak2",
+    "Little AlterBoy","Little MicroShift","Little Plate","Little Radiator","Little PrimalTap",
+    "MicroShift","PanMan","PhaseMistress","PrimalTap","Radiator","Tremolator"
+  ],
+
+  "Antares": [
+    "Auto-Key 2","Auto-Tune Pro"
+  ],
+
+  "Apple": [
+    "Apple Guitar Amp"
+  ],
+
+  "Cableguys": [
+    "ShaperBox 2","ShaperBox 3"
+  ],
+
+  "Native Instruments": [
+    "Kontakt 8"
+  ],
+
+  "Nicky Romero": [
+    "Kickstart","Kickstart 2"
+  ],
+
+  "oeksound": [
+    "soothe2"
+  ],
+
+  "reFX": [
+    "Nexus"
+  ],
+
+  "Slate Digital": [
+    "Fresh Air"
+  ],
+
+  "Spectrasonics": [
+    "Keyscape","Omnisphere","Stylus RMX","Trilian"
+  ],
+
+  "LennarDigital": [
+    "Sylenth1"
+  ],
+
+  "Swar Systems": [
+    "SwarPlug"
+  ],
+
+  "Valhalla DSP": [
+    "ValhallaDelay","ValhallaFreqEcho","ValhallaFutureVerb","ValhallaPlate","ValhallaRoom",
+    "ValhallaShimmer","ValhallaSpaceModulator","ValhallaSupermassive","ValhallaUberMod","ValhallaVintageVerb"
+  ],
+
+  "Voxengo": [
+    "SPAN"
+  ],
+
+  "XLN Audio": [
+    "RC-20 Retro Color"
+  ],
+
+  "Xfer Records": [
+    "LFO Tool","Serum 2","Serum 2 FX"
+  ]
+};
+
+// Vendor colors
+const VENDOR_COLORS = {
+  "Waves": "#7c3aed",
+  "FabFilter": "#db2777",
+  "Image-Line": "#16a34a",
+  "Soundtoys": "#d97706",
+  "Antares": "#0891b2",
+  "Apple": "#6366f1",
+  "Cableguys": "#f43f5e",
+  "Native Instruments": "#dc2626",
+  "Nicky Romero": "#ea580c",
+  "oeksound": "#0d9488",
+  "reFX": "#7c3aed",
+  "Slate Digital": "#64748b",
+  "Spectrasonics": "#b45309",
+  "LennarDigital": "#4338ca",
+  "Swar Systems": "#be185d",
+  "Valhalla DSP": "#0e7490",
+  "Voxengo": "#166534",
+  "XLN Audio": "#9333ea",
+  "Xfer Records": "#b91c1c"
+};
+
+// Detect tags from plugin name
+function getTags(name) {
+  const tags = [];
+  const n = name.toLowerCase();
+  if (/mono-stereo|mono stereo/.test(n)) tags.push('ms');
+  else if (/\bmono\b/.test(n)) tags.push('mono');
+  if (!tags.includes('ms') && /\bstereo\b/.test(n)) tags.push('stereo');
+  if (/\b5\.0\b/.test(n)) tags.push('50');
+  if (/\b5\.1\b/.test(n)) tags.push('51');
+  if (/\b7\.1\b/.test(n)) tags.push('71');
+  if (/\bquad\b/.test(n)) tags.push('quad');
+  if (/\blive\b/.test(n)) tags.push('live');
+  return tags;
+}
+
+// Render tag HTML
+function renderTag(t) {
+  const map = {
+    mono: ['M', 'tag-mono'],
+    stereo: ['S', 'tag-stereo'],
+    ms: ['M-S', 'tag-ms'],
+    '51': ['5.1', 'tag-51'],
+    '50': ['5.0', 'tag-50'],
+    '71': ['7.1', 'tag-71'],
+    quad: ['Q', 'tag-quad'],
+    live: ['Live', 'tag-live']
+  };
+  const [label, cls] = map[t] || ['?', ''];
+  return `<span class="tag ${cls}">${label}</span>`;
+}
+
+// Build DOM
+let allCards = [];
+
+function buildUI() {
+  const grid = document.getElementById('vendorsGrid');
+  const vendors = Object.keys(DATA).sort((a,b) => a.localeCompare(b));
+
+  let totalPlugins = 0;
+  vendors.forEach(vendor => totalPlugins += DATA[vendor].length);
+
+  // Stats bar
+  const statsBar = document.getElementById('statsBar');
+  statsBar.innerHTML = `
+    <div class="stat"><span class="stat-num">${vendors.length}</span><span class="stat-label">Vendors</span></div>
+    <div class="stat"><span class="stat-num">${totalPlugins}</span><span class="stat-label">Plugins</span></div>
+    <div class="stat"><span class="stat-num">${countByTag('mono')}</span><span class="stat-label">Mono</span></div>
+    <div class="stat"><span class="stat-num">${countByTag('stereo')}</span><span class="stat-label">Stereo</span></div>
+    <div class="stat"><span class="stat-num">${countByTag('51')}</span><span class="stat-label">5.1</span></div>
+  `;
+
+  vendors.forEach(vendor => {
+    const plugins = DATA[vendor].slice().sort((a,b) => a.localeCompare(b));
+    const color = VENDOR_COLORS[vendor] || '#6b6b80';
+
+    const card = document.createElement('div');
+    card.className = 'vendor-card expanded';
+    card.dataset.vendor = vendor;
+
+    const pluginRows = plugins.map(name => {
+      const tags = getTags(name);
+      const tagsHtml = tags.map(renderTag).join('');
+      return `<div class="plugin-item" data-name="${name.toLowerCase()}" data-tags="${tags.join(' ')}">
+        <span class="plugin-name">${escHtml(name)}</span>
+        <span class="tag-row">${tagsHtml}</span>
+      </div>`;
+    }).join('');
+
+    card.innerHTML = `
+      <div class="vendor-header">
+        <div class="vendor-left">
+          <div class="vendor-dot" style="background:${color}"></div>
+          <span class="vendor-name">${escHtml(vendor)}</span>
+        </div>
+        <div class="vendor-right">
+          <span class="vendor-count">${plugins.length}</span>
+          <span class="vendor-toggle">▼</span>
+        </div>
+      </div>
+      <div class="plugin-list">${pluginRows}</div>
+    `;
+
+    card.querySelector('.vendor-header').addEventListener('click', () => {
+      card.classList.toggle('expanded');
+    });
+
+    grid.appendChild(card);
+    allCards.push(card);
+  });
+
+  updateVendorCount();
+}
+
+function countByTag(tag) {
+  let c = 0;
+  Object.values(DATA).forEach(plugins => {
+    plugins.forEach(name => { if (getTags(name).includes(tag)) c++; });
+  });
+  return c;
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function updateVendorCount() {
+  const visible = allCards.filter(c => !c.classList.contains('vendor-section-hidden')).length;
+  document.getElementById('vendorVisibleCount').textContent = `${visible} / ${allCards.length} vendors`;
+}
+
+// SEARCH + FILTER
+let currentFilter = 'all';
+
+document.getElementById('searchInput').addEventListener('input', applyFilters);
+
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.filter;
+    applyFilters();
+  });
+});
+
+function applyFilters() {
+  const query = document.getElementById('searchInput').value.trim().toLowerCase();
+  let totalVisible = 0;
+
+  allCards.forEach(card => {
+    const items = card.querySelectorAll('.plugin-item');
+    let cardVisible = 0;
+
+    items.forEach(item => {
+      const name = item.dataset.name;
+      const tags = item.dataset.tags;
+      const nameEl = item.querySelector('.plugin-name');
+
+      // Filter check
+      let passFilter = true;
+      if (currentFilter !== 'all') {
+        passFilter = tags.includes(currentFilter.replace('.',''));
+        if (currentFilter === 'mono') passFilter = tags.includes('mono');
+        if (currentFilter === 'stereo') passFilter = tags.includes('stereo');
+        if (currentFilter === '5.0') passFilter = tags.includes('50');
+        if (currentFilter === '5.1') passFilter = tags.includes('51');
+        if (currentFilter === '7.1') passFilter = tags.includes('71');
+        if (currentFilter === 'quad') passFilter = tags.includes('quad');
+        if (currentFilter === 'live') passFilter = tags.includes('live');
+        if (currentFilter === 'ms') passFilter = tags.includes('ms');
+      }
+
+      // Search check
+      let passSearch = true;
+      if (query) {
+        passSearch = name.includes(query);
+        if (passSearch) {
+          // Highlight
+          const original = item.dataset.originalName || (item.dataset.originalName = nameEl.textContent);
+          const idx = original.toLowerCase().indexOf(query);
+          if (idx >= 0) {
+            nameEl.innerHTML = escHtml(original.slice(0, idx)) +
+              '<mark>' + escHtml(original.slice(idx, idx + query.length)) + '</mark>' +
+              escHtml(original.slice(idx + query.length));
+          }
+        } else {
+          const original = item.dataset.originalName || nameEl.textContent;
+          nameEl.textContent = original;
+        }
+      } else {
+        // Clear highlight
+        const original = item.dataset.originalName;
+        if (original) nameEl.textContent = original;
+      }
+
+      const show = passFilter && passSearch;
+      item.classList.toggle('hidden-item', !show);
+      if (show) cardVisible++;
+    });
+
+    // Also check vendor name
+    const vendorName = card.dataset.vendor.toLowerCase();
+    let vendorMatch = query && vendorName.includes(query);
+    if (vendorMatch) {
+      items.forEach(item => {
+        const tags = item.dataset.tags;
+        let passFilter = true;
+        if (currentFilter !== 'all') {
+          passFilter = false;
+          if (currentFilter === 'mono') passFilter = tags.includes('mono');
+          else if (currentFilter === 'stereo') passFilter = tags.includes('stereo');
+          else if (currentFilter === '5.0') passFilter = tags.includes('50');
+          else if (currentFilter === '5.1') passFilter = tags.includes('51');
+          else if (currentFilter === '7.1') passFilter = tags.includes('71');
+          else if (currentFilter === 'quad') passFilter = tags.includes('quad');
+          else if (currentFilter === 'live') passFilter = tags.includes('live');
+          else if (currentFilter === 'ms') passFilter = tags.includes('ms');
+        }
+        if (passFilter && item.classList.contains('hidden-item')) {
+          item.classList.remove('hidden-item');
+          cardVisible++;
+        }
+      });
+    }
+
+    const hide = cardVisible === 0;
+    card.classList.toggle('vendor-section-hidden', hide);
+    totalVisible += cardVisible;
+
+    // Update vendor count badge
+    const countBadge = card.querySelector('.vendor-count');
+    if (countBadge) countBadge.textContent = cardVisible + (cardVisible !== items.length ? `/${items.length}` : '');
+  });
+
+  document.getElementById('searchCount').textContent = query ? `${totalVisible} found` : '';
+  document.getElementById('noResults').classList.toggle('visible', totalVisible === 0);
+  updateVendorCount();
+}
+
+buildUI();
+</script>
+</body>
+</html>

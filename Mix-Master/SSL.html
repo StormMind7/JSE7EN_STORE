@@ -1,0 +1,1474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SSL G Channel – Complete Mixing Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,300&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:        #0a0b0e;
+    --bg2:       #111318;
+    --bg3:       #181c23;
+    --card:      #1a1f2b;
+    --border:    #262d3d;
+    --text:      #e8ecf5;
+    --muted:     #7a85a0;
+    --red:       #ff4c4c;
+    --red-glow:  #ff4c4c40;
+    --green:     #3ddc84;
+    --green-glow:#3ddc8440;
+    --blue:      #4fa3ff;
+    --blue-glow: #4fa3ff40;
+    --yellow:    #ffd166;
+    --white-k:   #e8ecf5;
+    --orange:    #ff8c42;
+    --accent:    #7c3aed;
+    --accent2:   #a855f7;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* ── NOISE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    opacity: .5;
+  }
+
+  .wrap { position: relative; z-index: 1; }
+
+  /* ── NAV ── */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(10,11,14,.92);
+    backdrop-filter: blur(18px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 clamp(16px, 4vw, 60px);
+    display: flex; align-items: center; justify-content: space-between;
+    height: 58px;
+  }
+  .nav-brand {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.5rem;
+    letter-spacing: 3px;
+    background: linear-gradient(135deg, var(--red), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .nav-links {
+    display: flex; gap: 6px; list-style: none;
+    flex-wrap: wrap;
+  }
+  .nav-links a {
+    color: var(--muted); text-decoration: none;
+    font-size: .78rem; font-weight: 500; letter-spacing: .5px;
+    padding: 5px 10px; border-radius: 6px;
+    transition: all .2s;
+    text-transform: uppercase;
+  }
+  .nav-links a:hover { color: var(--text); background: var(--bg3); }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 92vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center;
+    padding: clamp(60px, 10vw, 120px) clamp(16px, 5vw, 80px);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-bg {
+    position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(ellipse 70% 50% at 50% -10%, #7c3aed22 0%, transparent 70%),
+      radial-gradient(ellipse 50% 40% at 20% 110%, #ff4c4c18 0%, transparent 60%),
+      radial-gradient(ellipse 50% 40% at 80% 110%, #3ddc8415 0%, transparent 60%);
+  }
+  .hero-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .75rem; letter-spacing: 4px;
+    color: var(--accent2);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    opacity: 0; animation: fadeUp .6s .1s forwards;
+  }
+  .hero h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(3.5rem, 10vw, 9rem);
+    line-height: .95;
+    letter-spacing: 4px;
+    background: linear-gradient(160deg, #fff 30%, #a0aec0 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    opacity: 0; animation: fadeUp .7s .25s forwards;
+  }
+  .hero h1 span {
+    background: linear-gradient(135deg, var(--red) 0%, var(--accent2) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .hero-sub {
+    margin-top: 24px;
+    font-size: clamp(.95rem, 2vw, 1.15rem);
+    color: var(--muted);
+    max-width: 560px;
+    opacity: 0; animation: fadeUp .7s .4s forwards;
+  }
+  .hero-chips {
+    display: flex; flex-wrap: wrap; gap: 10px;
+    justify-content: center;
+    margin-top: 36px;
+    opacity: 0; animation: fadeUp .7s .55s forwards;
+  }
+  .chip {
+    padding: 7px 16px; border-radius: 999px;
+    font-size: .78rem; font-weight: 600;
+    letter-spacing: .5px;
+    border: 1px solid;
+    text-transform: uppercase;
+  }
+  .chip-red    { color: var(--red);   border-color: var(--red);   background: var(--red-glow); }
+  .chip-green  { color: var(--green); border-color: var(--green); background: var(--green-glow); }
+  .chip-blue   { color: var(--blue);  border-color: var(--blue);  background: var(--blue-glow); }
+  .chip-yellow { color: var(--yellow);border-color: var(--yellow);background: #ffd16620; }
+  .chip-purple { color: var(--accent2);border-color: var(--accent2);background: #a855f720; }
+
+  .scroll-hint {
+    margin-top: 56px;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    color: var(--muted); font-size: .75rem; letter-spacing: 2px;
+    text-transform: uppercase;
+    opacity: 0; animation: fadeUp .7s .7s forwards;
+  }
+  .scroll-line {
+    width: 1px; height: 48px;
+    background: linear-gradient(to bottom, var(--accent2), transparent);
+    animation: scrollPulse 2s ease-in-out infinite;
+  }
+
+  @keyframes fadeUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:none; } }
+  @keyframes scrollPulse { 0%,100%{opacity:.3;transform:scaleY(1)} 50%{opacity:1;transform:scaleY(1.2)} }
+
+  /* ── SECTIONS ── */
+  section {
+    padding: clamp(60px,8vw,110px) clamp(16px,5vw,80px);
+    max-width: 1280px; margin: 0 auto;
+  }
+  .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .7rem; letter-spacing: 4px; text-transform: uppercase;
+    color: var(--accent2); margin-bottom: 10px;
+  }
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    letter-spacing: 2px; line-height: 1.1;
+    margin-bottom: 14px;
+  }
+  .section-desc { color: var(--muted); max-width: 640px; font-size: .95rem; }
+
+  /* ── INTRO CARDS ── */
+  .intro-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 20px; margin-top: 44px;
+  }
+  .intro-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px; padding: 28px;
+    position: relative; overflow: hidden;
+    transition: transform .25s, box-shadow .25s;
+  }
+  .intro-card::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, var(--clr)10, transparent 60%);
+    opacity: 0; transition: opacity .25s;
+  }
+  .intro-card:hover { transform: translateY(-4px); box-shadow: 0 16px 48px #00000060; }
+  .intro-card:hover::before { opacity: 1; }
+  .ic-icon { font-size: 1.8rem; margin-bottom: 16px; }
+  .ic-title { font-weight: 700; font-size: 1rem; margin-bottom: 8px; }
+  .ic-text  { color: var(--muted); font-size: .88rem; }
+
+  /* ── FLOW BAR ── */
+  .flow-bar {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 16px; padding: 28px 32px;
+    margin-top: 44px;
+    display: flex; flex-wrap: wrap;
+    align-items: center; gap: 0;
+  }
+  .flow-step {
+    display: flex; align-items: center; gap: 12px;
+    flex: 1; min-width: 120px;
+  }
+  .flow-dot {
+    width: 38px; height: 38px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .9rem; font-weight: 700; flex-shrink: 0;
+    border: 2px solid;
+  }
+  .flow-label { font-size: .82rem; font-weight: 600; }
+  .flow-sub   { font-size: .72rem; color: var(--muted); }
+  .flow-arrow {
+    color: var(--muted); font-size: 1.2rem; padding: 0 8px;
+    flex-shrink: 0;
+  }
+
+  /* ── MODULE SECTION ── */
+  .module {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px; overflow: hidden;
+    margin-top: 32px;
+  }
+  .module-header {
+    padding: 22px 28px;
+    display: flex; align-items: center; gap: 16px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer; user-select: none;
+  }
+  .module-header:hover { background: var(--bg3); }
+  .mod-num {
+    width: 36px; height: 36px;
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .8rem; font-weight: 600; flex-shrink: 0;
+  }
+  .mod-title { font-weight: 700; font-size: 1.05rem; flex: 1; }
+  .mod-badge {
+    font-size: .7rem; padding: 3px 10px; border-radius: 999px;
+    font-family: 'JetBrains Mono', monospace; letter-spacing: .5px;
+    font-weight: 600;
+  }
+  .mod-toggle {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--bg); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: .8rem; transition: transform .3s;
+    flex-shrink: 0;
+  }
+  .module.open .mod-toggle { transform: rotate(180deg); }
+
+  .module-body {
+    padding: 28px;
+    display: none;
+  }
+  .module.open .module-body { display: block; }
+
+  .knob-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px; margin-top: 0;
+  }
+  .knob-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px;
+    position: relative;
+  }
+  .knob-card::after {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    border-radius: 12px 12px 0 0;
+    background: var(--clr);
+  }
+  .kc-name  { font-weight: 700; font-size: .9rem; margin-bottom: 6px; }
+  .kc-desc  { color: var(--muted); font-size: .82rem; margin-bottom: 14px; }
+  .kc-range {
+    display: flex; align-items: center; gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .75rem;
+  }
+  .range-bar {
+    flex: 1; height: 5px; background: var(--bg3);
+    border-radius: 99px; overflow: hidden;
+  }
+  .range-fill {
+    height: 100%; border-radius: 99px;
+    background: var(--clr);
+  }
+  .range-safe {
+    margin-top: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .72rem;
+    color: var(--green);
+    background: var(--green-glow);
+    padding: 4px 10px; border-radius: 6px;
+    display: inline-block;
+  }
+  .tip-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--yellow);
+    border-radius: 0 10px 10px 0;
+    padding: 12px 16px;
+    margin-top: 20px;
+    font-size: .85rem;
+    color: var(--muted);
+  }
+  .tip-box strong { color: var(--yellow); }
+
+  /* ── GENRE TABLE ── */
+  .table-wrap {
+    overflow-x: auto;
+    margin-top: 28px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+  }
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: .83rem;
+  }
+  thead tr {
+    background: var(--bg3);
+    border-bottom: 2px solid var(--border);
+  }
+  th {
+    padding: 14px 16px; text-align: left;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .7rem; letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  th:first-child { color: var(--text); }
+  td {
+    padding: 13px 16px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--bg3); }
+  .tag {
+    display: inline-block;
+    padding: 2px 9px; border-radius: 99px;
+    font-size: .72rem; font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .tag-on  { background: #3ddc8420; color: var(--green); border: 1px solid var(--green); }
+  .tag-off { background: #ff4c4c18; color: var(--red);   border: 1px solid var(--red);   }
+  .tag-val { background: var(--bg2); color: var(--blue);  border: 1px solid var(--border);}
+
+  /* ── PRESET CARD ── */
+  .preset-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px; margin-top: 32px;
+  }
+  .preset-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 14px; padding: 22px;
+    position: relative; overflow: hidden;
+  }
+  .preset-card::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, #7c3aed10, transparent);
+  }
+  .pc-section {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .65rem; color: var(--accent2);
+    letter-spacing: 2px; text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .pc-row {
+    display: flex; justify-content: space-between;
+    align-items: center;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: .82rem;
+  }
+  .pc-row:last-child { border-bottom: none; }
+  .pc-key   { color: var(--muted); }
+  .pc-val   { font-weight: 600; font-family: 'JetBrains Mono', monospace; color: var(--text); font-size: .78rem; }
+
+  /* ── MISTAKES ── */
+  .mistake-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px; margin-top: 32px;
+  }
+  .mistake-item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--red);
+    border-radius: 0 12px 12px 0;
+    padding: 16px 20px;
+    display: flex; gap: 12px; align-items: flex-start;
+  }
+  .mi-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 2px; }
+  .mi-text { font-size: .88rem; }
+
+  /* ── SPAN GUIDE ── */
+  .span-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px; margin-top: 32px;
+  }
+  .span-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px; padding: 22px;
+  }
+  .sc-zone { font-size: .75rem; font-family:'JetBrains Mono',monospace; color: var(--accent2); margin-bottom: 8px; letter-spacing:2px; text-transform:uppercase; }
+  .sc-title { font-weight: 700; margin-bottom: 6px; }
+  .sc-desc  { color: var(--muted); font-size: .85rem; }
+  .sc-check { color: var(--green); font-size: .82rem; margin-top: 8px; }
+
+  /* ── DIVIDER ── */
+  .divider {
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--border), transparent);
+    margin: 0 clamp(16px, 5vw, 80px);
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    text-align: center; padding: 48px 20px;
+    color: var(--muted); font-size: .82rem;
+    border-top: 1px solid var(--border);
+    position: relative; z-index: 1;
+  }
+  footer strong { color: var(--text); }
+
+  /* ── BACK TO TOP ── */
+  #btt {
+    position: fixed; bottom: 24px; right: 24px;
+    width: 44px; height: 44px; border-radius: 50%;
+    background: var(--accent);
+    border: none; cursor: pointer; color: white;
+    font-size: 1.1rem;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 20px #7c3aed50;
+    transition: transform .2s, opacity .2s;
+    opacity: 0; pointer-events: none; z-index: 200;
+  }
+  #btt.visible { opacity: 1; pointer-events: all; }
+  #btt:hover { transform: scale(1.1); }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex; gap: 4px; flex-wrap: wrap;
+    margin-bottom: 24px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px; padding: 4px;
+    width: fit-content; max-width: 100%;
+  }
+  .tab {
+    padding: 8px 18px; border-radius: 8px;
+    font-size: .8rem; font-weight: 600;
+    cursor: pointer; border: none;
+    background: transparent; color: var(--muted);
+    transition: all .2s; white-space: nowrap;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .tab.active { background: var(--card); color: var(--text); box-shadow: 0 2px 8px #00000040; }
+  .tab-pane { display: none; }
+  .tab-pane.active { display: block; }
+
+  /* ── LEGEND PILLS ── */
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 10px;
+    margin-top: 20px; margin-bottom: 6px;
+  }
+  .legend-pill {
+    display: flex; align-items: center; gap: 7px;
+    font-size: .77rem; color: var(--muted);
+  }
+  .lp-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+  /* ── HIGHLIGHT ── */
+  .hl { color: var(--yellow); font-weight: 600; }
+  .success { color: var(--green); }
+  .danger  { color: var(--red); }
+
+  /* ── RESPONSIVE ── */
+  @media(max-width:768px) {
+    .nav-links { display: none; }
+    .flow-arrow { display: none; }
+    .flow-bar { gap: 16px; }
+    .flow-step { flex: unset; width: 45%; }
+    table { font-size: .76rem; }
+    th, td { padding: 10px 12px; }
+  }
+  @media(max-width:500px) {
+    .flow-step { width: 100%; }
+    .preset-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- NAV -->
+<nav>
+  <div class="nav-brand">SSL G Channel</div>
+  <ul class="nav-links">
+    <li><a href="#intro">Intro</a></li>
+    <li><a href="#why">Why & When</a></li>
+    <li><a href="#modules">Modules</a></li>
+    <li><a href="#genres">Genre Tables</a></li>
+    <li><a href="#preset">Preset</a></li>
+    <li><a href="#verify">Verify</a></li>
+    <li><a href="#mistakes">Mistakes</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-bg"></div>
+  <p class="hero-eyebrow">Complete Mixing Guide</p>
+  <h1>SSL <span>G Channel</span></h1>
+  <p class="hero-sub">Your definitive reference for EQ, Dynamics, Routing, and Coloring on the Mix Bus — from intro to advanced genre-specific tables.</p>
+  <div class="hero-chips">
+    <span class="chip chip-red">🔴 EQ Shaping</span>
+    <span class="chip chip-green">🟢 Dynamics</span>
+    <span class="chip chip-blue">🔵 Routing</span>
+    <span class="chip chip-yellow">⚡ Analog Color</span>
+    <span class="chip chip-purple">📊 SPAN Verify</span>
+  </div>
+  <div class="scroll-hint">
+    <span>Scroll to explore</span>
+    <div class="scroll-line"></div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- INTRO -->
+<section id="intro">
+  <p class="section-label">01 — Introduction</p>
+  <h2 class="section-title">What Is SSL G Channel?</h2>
+  <p class="section-desc">The SSL G Channel is a plugin emulation of the legendary SSL 4000 G console's channel strip — used by world-class mixing engineers on every genre from Pop to Orchestral.</p>
+
+  <div class="intro-grid">
+    <div class="intro-card" style="--clr:#7c3aed">
+      <div class="ic-icon">🎛️</div>
+      <div class="ic-title">Console-in-a-Plugin</div>
+      <div class="ic-text">Packs Filters, a 4-band EQ, Compressor, Expander/Gate, and Routing into one powerful strip — like a mini mixing console.</div>
+    </div>
+    <div class="intro-card" style="--clr:#ff4c4c">
+      <div class="ic-icon">🎚️</div>
+      <div class="ic-title">Mix Bus "Glue"</div>
+      <div class="ic-text">Its compressor is famous for glueing individual tracks into a cohesive, polished mix without squashing transients.</div>
+    </div>
+    <div class="intro-card" style="--clr:#3ddc84">
+      <div class="ic-icon">🎵</div>
+      <div class="ic-title">Gentle Shaping</div>
+      <div class="ic-text">Think 0.5–2 dB moves, not heavy surgery. SSL is a refiner, not a fixer. For big problems, reach for Pro-Q3.</div>
+    </div>
+    <div class="intro-card" style="--clr:#4fa3ff">
+      <div class="ic-icon">🏆</div>
+      <div class="ic-title">Industry Standard</div>
+      <div class="ic-text">Used on records by Michael Jackson, Nirvana, Daft Punk, and virtually every major release since the 1980s.</div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- WHY & WHEN -->
+<section id="why">
+  <p class="section-label">02 — Why & When</p>
+  <h2 class="section-title">Why Use It & When</h2>
+  <p class="section-desc">Understanding when to reach for SSL vs. other tools is half the battle. Here's the clear decision framework.</p>
+
+  <div class="intro-grid" style="margin-top:40px">
+    <div class="intro-card" style="--clr:#ffd166">
+      <div class="ic-icon">✅</div>
+      <div class="ic-title">Use SSL G When…</div>
+      <div class="ic-text">
+        • Your mix sounds "unglued" or loose<br>
+        • You need subtle tonal polish (+/- 1–2 dB)<br>
+        • Bass feels muddy or undefined<br>
+        • Mix sounds flat and lifeless (Analog ON)<br>
+        • On the Master or Mix Bus (2-bus)
+      </div>
+    </div>
+    <div class="intro-card" style="--clr:#ff4c4c">
+      <div class="ic-icon">❌</div>
+      <div class="ic-title">Don't Use SSL When…</div>
+      <div class="ic-text">
+        • A specific frequency needs heavy correction (use Pro-Q3)<br>
+        • Multiband compression is needed (use Pro-MB)<br>
+        • You need surgical narrow-Q cuts<br>
+        • Heavy limiting is required (use a limiter)<br>
+        • Trying to fix a bad mix at stem level
+      </div>
+    </div>
+    <div class="intro-card" style="--clr:#3ddc84">
+      <div class="ic-icon">🔗</div>
+      <div class="ic-title">Typical Signal Chain</div>
+      <div class="ic-text">
+        SSL G → (optional) Pro-Q3 → Limiter<br><br>
+        SSL comes <strong>first</strong> — it shapes and glues before you hit the limiter.
+      </div>
+    </div>
+  </div>
+
+  <!-- SIGNAL FLOW -->
+  <p style="font-weight:700;margin-top:44px;margin-bottom:16px;font-size:.9rem;letter-spacing:.5px;">📐 SIGNAL FLOW INSIDE THE PLUGIN</p>
+  <div class="flow-bar">
+    <div class="flow-step">
+      <div class="flow-dot" style="border-color:#6b7280;color:#6b7280">🔘</div>
+      <div>
+        <div class="flow-label">FILTERS</div>
+        <div class="flow-sub">HPF / LPF cleanup</div>
+      </div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <div class="flow-dot" style="border-color:#ff4c4c;color:#ff4c4c">🔴</div>
+      <div>
+        <div class="flow-label">EQ BAND</div>
+        <div class="flow-sub">HF / HMF / LMF / LF</div>
+      </div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <div class="flow-dot" style="border-color:#e8ecf5;color:#e8ecf5">⚪</div>
+      <div>
+        <div class="flow-label">DYNAMICS</div>
+        <div class="flow-sub">Compressor / Gate</div>
+      </div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <div class="flow-dot" style="border-color:#ffd166;color:#ffd166">⚡</div>
+      <div>
+        <div class="flow-label">ANALOG</div>
+        <div class="flow-sub">Subtle saturation</div>
+      </div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <div class="flow-dot" style="border-color:#3ddc84;color:#3ddc84">🔊</div>
+      <div>
+        <div class="flow-label">OUTPUT</div>
+        <div class="flow-sub">Polished mix bus</div>
+      </div>
+    </div>
+  </div>
+  <div class="tip-box">
+    <strong>💡 SPLIT Button</strong> — When ON, EQ is applied <em>after</em> compression = punchier transients. Use ON for mix bus. OFF means EQ goes before, giving compressor more control over the shaped signal.
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- MODULES -->
+<section id="modules">
+  <p class="section-label">03 — Module Reference</p>
+  <h2 class="section-title">Every Knob, Every Section</h2>
+  <p class="section-desc">Click any module to expand and explore each control — range, safe zone, and practical tips.</p>
+
+  <!-- MODULE 1: FILTERS -->
+  <div class="module open" id="mod1">
+    <div class="module-header" onclick="toggleMod('mod1')">
+      <div class="mod-num" style="background:#6b728020;color:#9ca3af">01</div>
+      <div class="mod-title">🔘 FILTERS — High Pass & Low Pass</div>
+      <span class="mod-badge" style="background:#6b728020;color:#9ca3af;border:1px solid #374151">Grey Knobs</span>
+      <div class="mod-toggle">▼</div>
+    </div>
+    <div class="module-body">
+      <div class="knob-grid">
+        <div class="knob-card" style="--clr:#9ca3af">
+          <div class="kc-name">HPF — High Pass Filter</div>
+          <div class="kc-desc">Cuts low-end rumble below the set frequency. Essential on every mix bus.</div>
+          <div class="kc-range">
+            <span>20 Hz</span>
+            <div class="range-bar"><div class="range-fill" style="width:15%"></div></div>
+            <span>350 Hz</span>
+          </div>
+          <div class="range-safe">✓ Safe: 20–30 Hz (gentle) | 40–60 Hz (aggressive)</div>
+        </div>
+        <div class="knob-card" style="--clr:#9ca3af">
+          <div class="kc-name">LPF — Low Pass Filter</div>
+          <div class="kc-desc">Cuts harsh highs above the set frequency. Usually leave fully open.</div>
+          <div class="kc-range">
+            <span>3 kHz</span>
+            <div class="range-bar"><div class="range-fill" style="width:85%"></div></div>
+            <span>20 kHz</span>
+          </div>
+          <div class="range-safe">✓ Safe: OFF (full open) unless mix is very harsh</div>
+        </div>
+        <div class="knob-card" style="--clr:#a855f7">
+          <div class="kc-name">SPLIT Button</div>
+          <div class="kc-desc">Controls EQ position relative to dynamics.</div>
+          <div style="margin-top:10px">
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <span class="tag tag-on">ON = EQ after Comp ✅</span>
+              <span class="tag tag-off">OFF = EQ before Comp</span>
+            </div>
+          </div>
+          <div class="range-safe">✓ Recommended: ON (more punch, mix bus standard)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODULE 2: HF -->
+  <div class="module" id="mod2">
+    <div class="module-header" onclick="toggleMod('mod2')">
+      <div class="mod-num" style="background:#ff4c4c20;color:#ff4c4c">02</div>
+      <div class="mod-title">🔴 HF — High Frequency EQ</div>
+      <span class="mod-badge" style="background:#ff4c4c20;color:#ff4c4c;border:1px solid #ff4c4c40">Red Knobs</span>
+      <div class="mod-toggle">▼</div>
+    </div>
+    <div class="module-body">
+      <div class="knob-grid">
+        <div class="knob-card" style="--clr:#ff4c4c">
+          <div class="kc-name">HF Gain</div>
+          <div class="kc-desc">Controls brightness and air. Adds shimmer to cymbals, strings, and high-frequency content.</div>
+          <div class="kc-range">
+            <span>-15 dB</span>
+            <div class="range-bar"><div class="range-fill" style="width:55%;margin-left:45%"></div></div>
+            <span>+15 dB</span>
+          </div>
+          <div class="range-safe">✓ Safe: -1 dB to +1 dB max on mix bus</div>
+        </div>
+        <div class="knob-card" style="--clr:#ff4c4c">
+          <div class="kc-name">HF Frequency</div>
+          <div class="kc-desc">Sets where the HF boost/cut acts. Higher frequencies add air; lower adds presence (but can be harsh).</div>
+          <div class="kc-range">
+            <span>3 kHz</span>
+            <div class="range-bar"><div class="range-fill" style="width:60%"></div></div>
+            <span>16 kHz</span>
+          </div>
+          <div class="range-safe">✓ Sweet spots: 8–12 kHz (air) | 5–7 kHz (presence, careful!)</div>
+        </div>
+      </div>
+      <div class="tip-box">
+        <strong>💡 HF Tip:</strong> Think of this as the "sparkle" knob. +0.5–1 dB at 10 kHz opens the mix up beautifully. Anything above +2 dB becomes harsh fast.
+      </div>
+    </div>
+  </div>
+
+  <!-- MODULE 3: HMF -->
+  <div class="module" id="mod3">
+    <div class="module-header" onclick="toggleMod('mod3')">
+      <div class="mod-num" style="background:#3ddc8420;color:#3ddc84">03</div>
+      <div class="mod-title">🟢 HMF — High-Mid Frequency EQ</div>
+      <span class="mod-badge" style="background:#3ddc8420;color:#3ddc84;border:1px solid #3ddc8440">Green Knobs</span>
+      <div class="mod-toggle">▼</div>
+    </div>
+    <div class="module-body">
+      <div class="knob-grid">
+        <div class="knob-card" style="--clr:#3ddc84">
+          <div class="kc-name">HMF Gain</div>
+          <div class="kc-desc">Controls the harshness/clarity zone. Usually cut slightly to tame harsh mixes; boost gently for clarity.</div>
+          <div class="kc-range">
+            <span>-15 dB</span>
+            <div class="range-bar"><div class="range-fill" style="width:52%;margin-left:45%"></div></div>
+            <span>+15 dB</span>
+          </div>
+          <div class="range-safe">✓ Safe: -1 to -2 dB (tame harsh) | +0.5 dB (add clarity)</div>
+        </div>
+        <div class="knob-card" style="--clr:#3ddc84">
+          <div class="kc-name">HMF Frequency</div>
+          <div class="kc-desc">Targets specific mid-range character. 2–4 kHz is the harsh zone; 1–2 kHz shapes vocal clarity.</div>
+          <div class="kc-range">
+            <span>0.6 kHz</span>
+            <div class="range-bar"><div class="range-fill" style="width:50%"></div></div>
+            <span>7 kHz</span>
+          </div>
+          <div class="range-safe">✓ Sweet spot: 2.5–3.5 kHz | Danger: boost at 2–4 kHz ⚠️</div>
+        </div>
+        <div class="knob-card" style="--clr:#3ddc84">
+          <div class="kc-name">HMF Q (Width)</div>
+          <div class="kc-desc">Narrow = surgical, precise. Wide = musical, natural. Mix bus always prefers wide.</div>
+          <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+            <span class="tag tag-on">Wide = Natural ✅</span>
+            <span class="tag tag-off">Narrow = Surgical</span>
+          </div>
+          <div class="range-safe">✓ Recommended: Wide (mix bus standard)</div>
+        </div>
+      </div>
+      <div class="tip-box">
+        <strong>⚠️ HARSH ZONE WARNING:</strong> The 2–4 kHz range is where boosting causes ear fatigue. Always cut slightly or leave flat. Never boost here on the mix bus.
+      </div>
+    </div>
+  </div>
+
+  <!-- MODULE 4: LMF -->
+  <div class="module" id="mod4">
+    <div class="module-header" onclick="toggleMod('mod4')">
+      <div class="mod-num" style="background:#4fa3ff20;color:#4fa3ff">04</div>
+      <div class="mod-title">🔵 LMF — Low-Mid Frequency EQ</div>
+      <span class="mod-badge" style="background:#4fa3ff20;color:#4fa3ff;border:1px solid #4fa3ff40">Blue Knobs</span>
+      <div class="mod-toggle">▼</div>
+    </div>
+    <div class="module-body">
+      <div class="knob-grid">
+        <div class="knob-card" style="--clr:#4fa3ff">
+          <div class="kc-name">LMF Gain</div>
+          <div class="kc-desc">Mud/warmth control. Slight cut removes boxiness and makes the mix punch through speakers more clearly.</div>
+          <div class="kc-range">
+            <span>-15 dB</span>
+            <div class="range-bar"><div class="range-fill" style="width:50%;margin-left:44%"></div></div>
+            <span>+15 dB</span>
+          </div>
+          <div class="range-safe">✓ Safe: -1 to -2 dB to remove mud</div>
+        </div>
+        <div class="knob-card" style="--clr:#4fa3ff">
+          <div class="kc-name">LMF Frequency</div>
+          <div class="kc-desc">200–400 Hz is the classic mud zone. Cutting here creates space and definition without losing warmth.</div>
+          <div class="kc-range">
+            <span>100 Hz</span>
+            <div class="range-bar"><div class="range-fill" style="width:35%"></div></div>
+            <span>2.5 kHz</span>
+          </div>
+          <div class="range-safe">✓ Key zone: 200–400 Hz (mud) | Cut gently for clarity</div>
+        </div>
+      </div>
+      <div class="tip-box">
+        <strong>💡 Mud Zone:</strong> 200–400 Hz is where most mixes get congested. A -1 dB cut at 250 Hz consistently cleans up low-mid clutter without making the mix thin.
+      </div>
+    </div>
+  </div>
+
+  <!-- MODULE 5: LF -->
+  <div class="module" id="mod5">
+    <div class="module-header" onclick="toggleMod('mod5')">
+      <div class="mod-num" style="background:#ffffff15;color:#e8ecf5">05</div>
+      <div class="mod-title">⚫ LF — Low Frequency EQ</div>
+      <span class="mod-badge" style="background:#ffffff10;color:#9ca3af;border:1px solid #374151">Grey/Black Knobs</span>
+      <div class="mod-toggle">▼</div>
+    </div>
+    <div class="module-body">
+      <div class="knob-grid">
+        <div class="knob-card" style="--clr:#e8ecf5">
+          <div class="kc-name">LF Gain</div>
+          <div class="kc-desc">Bass weight and sub control. Tiny changes here have huge impact — even ±0.5 dB moves the whole low end.</div>
+          <div class="kc-range">
+            <span>-15 dB</span>
+            <div class="range-bar"><div class="range-fill" style="width:52%;margin-left:44%"></div></div>
+            <span>+15 dB</span>
+          </div>
+          <div class="range-safe">✓ Safe: ±1 dB MAX — more = boomy/thin mix</div>
+        </div>
+        <div class="knob-card" style="--clr:#e8ecf5">
+          <div class="kc-name">LF Frequency</div>
+          <div class="kc-desc">Choose based on your kick and bass relationship. EDM goes lower; Bollywood slightly higher.</div>
+          <div class="kc-range">
+            <span>40 Hz</span>
+            <div class="range-bar"><div class="range-fill" style="width:30%"></div></div>
+            <span>300 Hz</span>
+          </div>
+          <div class="range-safe">✓ Genre default: 60–90 Hz for most music</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODULE 6: DYNAMICS -->
+  <div class="module" id="mod6">
+    <div class="module-header" onclick="toggleMod('mod6')">
+      <div class="mod-num" style="background:#ffffff15;color:#e8ecf5">06</div>
+      <div class="mod-title">⚪ DYNAMICS — Compressor & Gate</div>
+      <span class="mod-badge" style="background:#ffffff10;color:#e8ecf5;border:1px solid #4a5568">White Knobs</span>
+      <div class="mod-toggle">▼</div>
+    </div>
+    <div class="module-body">
+      <div class="knob-grid">
+        <div class="knob-card" style="--clr:#e8ecf5">
+          <div class="kc-name">Compressor Ratio</div>
+          <div class="kc-desc">How much the compressor clamps down once the signal exceeds the threshold. Low ratio = gentle glue.</div>
+          <div class="kc-range">
+            <span>1:1</span>
+            <div class="range-bar"><div class="range-fill" style="width:20%"></div></div>
+            <span>∞:1</span>
+          </div>
+          <div class="range-safe">✓ Mix bus standard: 2:1</div>
+        </div>
+        <div class="knob-card" style="--clr:#e8ecf5">
+          <div class="kc-name">Threshold</div>
+          <div class="kc-desc">Sets the level above which compression kicks in. Aim for just 1–2 dB of gain reduction — visible on the GR meter.</div>
+          <div class="kc-range">
+            <span>-20 dB</span>
+            <div class="range-bar"><div class="range-fill" style="width:60%;margin-left:40%"></div></div>
+            <span>0 dB</span>
+          </div>
+          <div class="range-safe">✓ Target: 1–2 dB gain reduction on GR meter</div>
+        </div>
+        <div class="knob-card" style="--clr:#e8ecf5">
+          <div class="kc-name">Release</div>
+          <div class="kc-desc">How fast the compressor lets go after the signal drops. Too fast = pumping; too slow = flat/lifeless.</div>
+          <div class="kc-range">
+            <span>0.1</span>
+            <div class="range-bar"><div class="range-fill" style="width:45%"></div></div>
+            <span>1.2</span>
+          </div>
+          <div class="range-safe">✓ Start: 0.6 (middle position)</div>
+        </div>
+        <div class="knob-card" style="--clr:#ff8c42">
+          <div class="kc-name">F.ATTK — Fast Attack</div>
+          <div class="kc-desc">Switch for attack character. OFF preserves initial transients for punch; ON is tighter and faster.</div>
+          <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+            <span class="tag tag-on">OFF = Punchy ✅</span>
+            <span class="tag tag-off">ON = Tight/Fast</span>
+          </div>
+          <div class="range-safe">✓ Recommended: OFF for mix bus</div>
+        </div>
+        <div class="knob-card" style="--clr:#ff4c4c">
+          <div class="kc-name">Expander / Gate</div>
+          <div class="kc-desc">Used for noise removal and expanding dynamics. Completely irrelevant for mix bus / mastering work.</div>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <span class="tag tag-off">ALWAYS OFF on Mix Bus ❌</span>
+          </div>
+          <div class="range-safe">✓ Set to bypass. No exceptions.</div>
+        </div>
+      </div>
+      <div class="tip-box">
+        <strong>💡 Golden Rule:</strong> 1–2 dB of gain reduction is the sweet spot. If your GR meter is hitting 4–6 dB, you're over-compressing — the mix will sound pumped and fatigued.
+      </div>
+    </div>
+  </div>
+
+  <!-- MODULE 7: ROUTING -->
+  <div class="module" id="mod7">
+    <div class="module-header" onclick="toggleMod('mod7')">
+      <div class="mod-num" style="background:#a855f720;color:#a855f7">07</div>
+      <div class="mod-title">🔘 ROUTING — EQ TO & DYN TO</div>
+      <span class="mod-badge" style="background:#a855f720;color:#a855f7;border:1px solid #a855f740">Routing Brain</span>
+      <div class="mod-toggle">▼</div>
+    </div>
+    <div class="module-body">
+      <div class="knob-grid">
+        <div class="knob-card" style="--clr:#a855f7">
+          <div class="kc-name">EQ TO — Sidechain Routing</div>
+          <div class="kc-desc">Tells the compressor's sidechain what signal to listen to. FLT DYN S.C means the filtered signal feeds the sidechain, preventing bass from over-triggering the compressor.</div>
+          <div style="margin-top:12px;display:flex;flex-direction:column;gap:6px">
+            <span class="tag" style="background:#a855f720;color:#a855f7;border:1px solid #a855f740;width:fit-content">BYP — Bypassed</span>
+            <span class="tag tag-on" style="width:fit-content">FLT DYN S.C ✅ RECOMMENDED</span>
+          </div>
+        </div>
+        <div class="knob-card" style="--clr:#a855f7">
+          <div class="kc-name">DYN TO — Dynamics Output</div>
+          <div class="kc-desc">Where the dynamics section sends its signal. BYP routes straight to channel output without extra routing.</div>
+          <div style="margin-top:12px;display:flex;flex-direction:column;gap:6px">
+            <span class="tag tag-on" style="width:fit-content">BYP ✅ RECOMMENDED</span>
+            <span class="tag" style="background:#4fa3ff20;color:#4fa3ff;border:1px solid #4fa3ff40;width:fit-content">CH OUT</span>
+          </div>
+        </div>
+      </div>
+      <div class="tip-box">
+        <strong>💡 Why FLT DYN S.C?</strong> Without sidechain filtering, a heavy kick drum hit can constantly over-trigger the compressor on the mix bus — causing pumping on every beat. FLT DYN S.C filters the sidechain so the compressor responds to the full mix, not just bass hits.
+      </div>
+    </div>
+  </div>
+
+  <!-- MODULE 8: ANALOG -->
+  <div class="module" id="mod8">
+    <div class="module-header" onclick="toggleMod('mod8')">
+      <div class="mod-num" style="background:#ffd16620;color:#ffd166">08</div>
+      <div class="mod-title">⚡ ANALOG — Harmonic Saturation</div>
+      <span class="mod-badge" style="background:#ffd16620;color:#ffd166;border:1px solid #ffd16640">Bottom Switch</span>
+      <div class="mod-toggle">▼</div>
+    </div>
+    <div class="module-body">
+      <div class="knob-grid">
+        <div class="knob-card" style="--clr:#ffd166">
+          <div class="kc-name">Analog ON/OFF</div>
+          <div class="kc-desc">Engages a subtle harmonic saturation and noise floor emulation. Adds the "vibe" and warmth that makes digital mixes feel analog. Barely audible but deeply felt — like the difference between LED and incandescent light.</div>
+          <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+            <span class="tag tag-on">ON = Subtle analog color ✅</span>
+            <span class="tag tag-off">OFF = Clean/digital</span>
+          </div>
+          <div class="range-safe">✓ Always ON for mix bus work</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- GENRE TABLES -->
+<section id="genres">
+  <p class="section-label">04 — Genre Settings</p>
+  <h2 class="section-title">Settings By Genre</h2>
+  <p class="section-desc">Reference tables for EDM, Cinematic, Orchestral, Hollywood, and Bollywood — every section, every knob.</p>
+
+  <div class="legend">
+    <div class="legend-pill"><div class="lp-dot" style="background:#3ddc84"></div> Green = Safe/ON</div>
+    <div class="legend-pill"><div class="lp-dot" style="background:#ff4c4c"></div> Red = Off/Caution</div>
+    <div class="legend-pill"><div class="lp-dot" style="background:#4fa3ff"></div> Blue = Value</div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('filters')">🔘 Filters</button>
+    <button class="tab" onclick="switchTab('hf')">🔴 HF</button>
+    <button class="tab" onclick="switchTab('hmf')">🟢 HMF</button>
+    <button class="tab" onclick="switchTab('lmf')">🔵 LMF</button>
+    <button class="tab" onclick="switchTab('lf')">⚫ LF</button>
+    <button class="tab" onclick="switchTab('dyn')">⚪ Dynamics</button>
+    <button class="tab" onclick="switchTab('route')">🔘 Routing</button>
+  </div>
+
+  <div class="tab-pane active" id="tab-filters">
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Control</th><th>EDM</th><th>Cinematic</th><th>Orchestral</th><th>Hollywood</th><th>Bollywood</th><th>Range</th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>HPF (Hz)</strong></td>
+            <td><span class="tag tag-val">25–30 Hz</span></td>
+            <td><span class="tag tag-val">20–25 Hz</span></td>
+            <td><span class="tag tag-val">20 Hz</span></td>
+            <td><span class="tag tag-val">25 Hz</span></td>
+            <td><span class="tag tag-val">25–30 Hz</span></td>
+            <td class="muted">20 → 350 Hz</td>
+          </tr>
+          <tr>
+            <td><strong>LPF (kHz)</strong></td>
+            <td><span class="tag tag-val">OFF / 18k</span></td>
+            <td><span class="tag tag-val">OFF</span></td>
+            <td><span class="tag tag-val">OFF</span></td>
+            <td><span class="tag tag-val">16–18k</span></td>
+            <td><span class="tag tag-val">16–18k</span></td>
+            <td class="muted">3k → 20k</td>
+          </tr>
+          <tr>
+            <td><strong>SPLIT</strong></td>
+            <td><span class="tag tag-on">ON</span></td>
+            <td><span class="tag tag-on">ON</span></td>
+            <td><span class="tag tag-off">OFF</span></td>
+            <td><span class="tag tag-on">ON</span></td>
+            <td><span class="tag tag-on">ON</span></td>
+            <td class="muted">ON / OFF</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="tab-pane" id="tab-hf">
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Control</th><th>EDM</th><th>Cinematic</th><th>Orchestral</th><th>Hollywood</th><th>Bollywood</th><th>Range</th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>HF Gain</strong></td>
+            <td><span class="tag tag-val">+0.5→+1 dB</span></td>
+            <td><span class="tag tag-val">+1 dB</span></td>
+            <td><span class="tag tag-val">+0.5 dB</span></td>
+            <td><span class="tag tag-val">+1 dB</span></td>
+            <td><span class="tag tag-val">+0.5→+1 dB</span></td>
+            <td class="muted">-15 → +15 dB</td>
+          </tr>
+          <tr>
+            <td><strong>HF Freq</strong></td>
+            <td><span class="tag tag-val">10–12 kHz</span></td>
+            <td><span class="tag tag-val">8–10 kHz</span></td>
+            <td><span class="tag tag-val">8–12 kHz</span></td>
+            <td><span class="tag tag-val">10 kHz</span></td>
+            <td><span class="tag tag-val">9–12 kHz</span></td>
+            <td class="muted">3k → 16k</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="tip-box" style="margin-top:16px">
+      <strong>💡 EDM</strong> = more sparkle at higher freq | <strong>Orchestral</strong> = natural, less boost, lower freq
+    </div>
+  </div>
+
+  <div class="tab-pane" id="tab-hmf">
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Control</th><th>EDM</th><th>Cinematic</th><th>Orchestral</th><th>Hollywood</th><th>Bollywood</th><th>Range</th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>HMF Gain</strong></td>
+            <td><span class="tag tag-val">-1→-2 dB</span></td>
+            <td><span class="tag tag-val">-1 dB</span></td>
+            <td><span class="tag tag-val">-0.5 dB</span></td>
+            <td><span class="tag tag-val">-1 dB</span></td>
+            <td><span class="tag tag-val">-1→-1.5 dB</span></td>
+            <td class="muted">-15 → +15 dB</td>
+          </tr>
+          <tr>
+            <td><strong>HMF Freq</strong></td>
+            <td><span class="tag tag-val">2.5–3.5 kHz</span></td>
+            <td><span class="tag tag-val">2–3 kHz</span></td>
+            <td><span class="tag tag-val">1.5–2.5 kHz</span></td>
+            <td><span class="tag tag-val">2–3 kHz</span></td>
+            <td><span class="tag tag-val">2.5–3 kHz</span></td>
+            <td class="muted">0.6k → 7k</td>
+          </tr>
+          <tr>
+            <td><strong>Q (Width)</strong></td>
+            <td><span class="tag tag-on">Wide</span></td>
+            <td><span class="tag tag-on">Wide</span></td>
+            <td><span class="tag tag-on">Wide</span></td>
+            <td><span class="tag tag-on">Wide</span></td>
+            <td><span class="tag tag-on">Wide</span></td>
+            <td class="muted">Narrow → Wide</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="tip-box" style="margin-top:16px">
+      <strong>⚠️ This is the HARSH ZONE CONTROL.</strong> Always cut here, never boost on mix bus.
+    </div>
+  </div>
+
+  <div class="tab-pane" id="tab-lmf">
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Control</th><th>EDM</th><th>Cinematic</th><th>Orchestral</th><th>Hollywood</th><th>Bollywood</th><th>Range</th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>LMF Gain</strong></td>
+            <td><span class="tag tag-val">-1→-2 dB</span></td>
+            <td><span class="tag tag-val">-1 dB</span></td>
+            <td><span class="tag tag-val">-0.5 dB</span></td>
+            <td><span class="tag tag-val">-1 dB</span></td>
+            <td><span class="tag tag-val">-1.5 dB</span></td>
+            <td class="muted">-15 → +15 dB</td>
+          </tr>
+          <tr>
+            <td><strong>LMF Freq</strong></td>
+            <td><span class="tag tag-val">200–300 Hz</span></td>
+            <td><span class="tag tag-val">150–250 Hz</span></td>
+            <td><span class="tag tag-val">150–300 Hz</span></td>
+            <td><span class="tag tag-val">200 Hz</span></td>
+            <td><span class="tag tag-val">200–300 Hz</span></td>
+            <td class="muted">100 → 2.5k</td>
+          </tr>
+          <tr>
+            <td><strong>Q</strong></td>
+            <td><span class="tag tag-on">Wide</span></td>
+            <td><span class="tag tag-on">Wide</span></td>
+            <td><span class="tag tag-on">Wide</span></td>
+            <td><span class="tag tag-on">Wide</span></td>
+            <td><span class="tag tag-on">Wide</span></td>
+            <td class="muted">Narrow → Wide</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="tab-pane" id="tab-lf">
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Control</th><th>EDM</th><th>Cinematic</th><th>Orchestral</th><th>Hollywood</th><th>Bollywood</th><th>Range</th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>LF Gain</strong></td>
+            <td><span class="tag tag-val">0→+1 dB</span></td>
+            <td><span class="tag tag-val">+0.5 dB</span></td>
+            <td><span class="tag tag-val">0 dB</span></td>
+            <td><span class="tag tag-val">+0.5 dB</span></td>
+            <td><span class="tag tag-val">+0.5 dB</span></td>
+            <td class="muted">-15 → +15 dB</td>
+          </tr>
+          <tr>
+            <td><strong>LF Freq</strong></td>
+            <td><span class="tag tag-val">60–80 Hz</span></td>
+            <td><span class="tag tag-val">50–70 Hz</span></td>
+            <td><span class="tag tag-val">60 Hz</span></td>
+            <td><span class="tag tag-val">60–80 Hz</span></td>
+            <td><span class="tag tag-val">70–90 Hz</span></td>
+            <td class="muted">40 → 300 Hz</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="tip-box" style="margin-top:16px">
+      <strong>💡 EDM</strong> = stronger bass boosted | <strong>Orchestral</strong> = controlled, 0 dB gain, let the mix breathe
+    </div>
+  </div>
+
+  <div class="tab-pane" id="tab-dyn">
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Control</th><th>EDM</th><th>Cinematic</th><th>Orchestral</th><th>Hollywood</th><th>Bollywood</th><th>Range</th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Ratio</strong></td>
+            <td><span class="tag tag-val">2:1</span></td>
+            <td><span class="tag tag-val">2:1</span></td>
+            <td><span class="tag tag-val">1.5:1</span></td>
+            <td><span class="tag tag-val">2:1</span></td>
+            <td><span class="tag tag-val">2:1</span></td>
+            <td class="muted">1 → ∞</td>
+          </tr>
+          <tr>
+            <td><strong>Threshold</strong></td>
+            <td><span class="tag tag-val">1–2 dB GR</span></td>
+            <td><span class="tag tag-val">1 dB GR</span></td>
+            <td><span class="tag tag-val">0.5–1 dB GR</span></td>
+            <td><span class="tag tag-val">1–2 dB GR</span></td>
+            <td><span class="tag tag-val">1–2 dB GR</span></td>
+            <td class="muted">-20 → 0 dB</td>
+          </tr>
+          <tr>
+            <td><strong>Release</strong></td>
+            <td><span class="tag tag-val">0.4–0.6</span></td>
+            <td><span class="tag tag-val">0.6–1</span></td>
+            <td><span class="tag tag-val">0.8–1.2</span></td>
+            <td><span class="tag tag-val">0.6</span></td>
+            <td><span class="tag tag-val">0.5–0.7</span></td>
+            <td class="muted">0.1 → 1.2</td>
+          </tr>
+          <tr>
+            <td><strong>F.ATTK</strong></td>
+            <td><span class="tag tag-off">OFF</span></td>
+            <td><span class="tag tag-off">OFF</span></td>
+            <td><span class="tag tag-off">OFF</span></td>
+            <td><span class="tag tag-off">OFF</span></td>
+            <td><span class="tag tag-off">OFF</span></td>
+            <td class="muted">ON / OFF</td>
+          </tr>
+          <tr>
+            <td><strong>Gate/Expander</strong></td>
+            <td><span class="tag tag-off">OFF ❌</span></td>
+            <td><span class="tag tag-off">OFF ❌</span></td>
+            <td><span class="tag tag-off">OFF ❌</span></td>
+            <td><span class="tag tag-off">OFF ❌</span></td>
+            <td><span class="tag tag-off">OFF ❌</span></td>
+            <td class="muted">Always OFF</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="tab-pane" id="tab-route">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Control</th><th>Setting</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>EQ TO</strong></td>
+            <td><span class="tag tag-on">FLT DYN S.C ✅</span></td>
+            <td>Prevents bass from over-triggering compressor sidechain</td>
+          </tr>
+          <tr>
+            <td><strong>DYN TO</strong></td>
+            <td><span class="tag tag-on">BYP ✅</span></td>
+            <td>Standard mix bus routing, straight to output</td>
+          </tr>
+          <tr>
+            <td><strong>Analog</strong></td>
+            <td><span class="tag tag-on">ON ✅</span></td>
+            <td>Adds subtle harmonic color to all genres</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- PRESET -->
+<section id="preset">
+  <p class="section-label">05 — Starter Preset</p>
+  <h2 class="section-title">Safe Starting Preset</h2>
+  <p class="section-desc">Works for almost any genre. Dial in from here — don't start from scratch each session.</p>
+
+  <div class="preset-grid">
+    <div class="preset-card">
+      <div class="pc-section">Filters</div>
+      <div class="pc-row"><span class="pc-key">HPF</span><span class="pc-val">25 Hz</span></div>
+      <div class="pc-row"><span class="pc-key">LPF</span><span class="pc-val">OFF</span></div>
+      <div class="pc-row"><span class="pc-key">SPLIT</span><span class="pc-val success">ON ✓</span></div>
+    </div>
+    <div class="preset-card">
+      <div class="pc-section">EQ Bands</div>
+      <div class="pc-row"><span class="pc-key">HF</span><span class="pc-val">+0.5 dB @ 10 kHz</span></div>
+      <div class="pc-row"><span class="pc-key">HMF</span><span class="pc-val">-1 dB @ 2.8 kHz</span></div>
+      <div class="pc-row"><span class="pc-key">LMF</span><span class="pc-val">-1 dB @ 250 Hz</span></div>
+      <div class="pc-row"><span class="pc-key">LF</span><span class="pc-val">0 dB</span></div>
+    </div>
+    <div class="preset-card">
+      <div class="pc-section">Dynamics</div>
+      <div class="pc-row"><span class="pc-key">Ratio</span><span class="pc-val">2:1</span></div>
+      <div class="pc-row"><span class="pc-key">Threshold</span><span class="pc-val">1–2 dB GR</span></div>
+      <div class="pc-row"><span class="pc-key">Release</span><span class="pc-val">0.6</span></div>
+      <div class="pc-row"><span class="pc-key">F.ATTK</span><span class="pc-val danger">OFF</span></div>
+      <div class="pc-row"><span class="pc-key">Gate</span><span class="pc-val danger">OFF ❌</span></div>
+    </div>
+    <div class="preset-card">
+      <div class="pc-section">Routing & Color</div>
+      <div class="pc-row"><span class="pc-key">EQ TO</span><span class="pc-val success">FLT DYN S.C</span></div>
+      <div class="pc-row"><span class="pc-key">DYN TO</span><span class="pc-val success">BYP</span></div>
+      <div class="pc-row"><span class="pc-key">Analog</span><span class="pc-val success">ON ✓</span></div>
+    </div>
+  </div>
+
+  <div class="tip-box" style="margin-top:24px">
+    <strong>🎯 Expected Result:</strong> Tighter bass → smoother mids → controlled highs → glued mix. If you hear pumping, raise the threshold. If the mix sounds thin, try 0 dB on LMF.
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- VERIFY WITH SPAN -->
+<section id="verify">
+  <p class="section-label">06 — Metering & Verification</p>
+  <h2 class="section-title">Verify With SPAN</h2>
+  <p class="section-desc">Use Voxengo SPAN (free) after SSL G to confirm your settings are working correctly. Here's what to look for.</p>
+
+  <div class="span-grid">
+    <div class="span-card">
+      <div class="sc-zone">Zone 1 — Low End (20–300 Hz)</div>
+      <div class="sc-title">Smooth Sub & Bass</div>
+      <div class="sc-desc">Should be a clean, descending slope. No bumps or peaks sticking out at 200–300 Hz.</div>
+      <div class="sc-check">✓ Good: Smooth slope, no mud bumps<br>❌ Bad: Spike at 200–400 Hz = too much LMF</div>
+    </div>
+    <div class="span-card">
+      <div class="sc-zone">Zone 2 — Mids (1–5 kHz)</div>
+      <div class="sc-title">Controlled Mid Range</div>
+      <div class="sc-desc">Should not be spiky or aggressive. A slight dip at 2–4 kHz is normal and healthy.</div>
+      <div class="sc-check">✓ Good: Gentle, not spiky or harsh<br>❌ Bad: Big peak at 3 kHz = too much HMF gain</div>
+    </div>
+    <div class="span-card">
+      <div class="sc-zone">Zone 3 — Highs (8–20 kHz)</div>
+      <div class="sc-title">Natural Air Roll-off</div>
+      <div class="sc-desc">Should gently roll off above 10 kHz. A slight shelf is natural. Hard spike = too much HF boost.</div>
+      <div class="sc-check">✓ Good: Smooth roll-off after 10 kHz<br>❌ Bad: Sharp spike = too much HF</div>
+    </div>
+    <div class="span-card">
+      <div class="sc-zone">Stereo Correlation</div>
+      <div class="sc-title">Phase Health Check</div>
+      <div class="sc-desc">The correlation meter shows how the left and right channels relate. Positive = healthy stereo. Negative = phase problems.</div>
+      <div class="sc-check">✓ Good: +0.2 to +1.0<br>❌ Bad: 0 or negative = phase issues</div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- MISTAKES -->
+<section id="mistakes">
+  <p class="section-label">07 — Common Mistakes</p>
+  <h2 class="section-title">What NOT To Do</h2>
+  <p class="section-desc">Avoid these and you'll immediately sound more professional.</p>
+
+  <div class="mistake-list">
+    <div class="mistake-item">
+      <div class="mi-icon">❌</div>
+      <div class="mi-text"><strong>Boosting more than 2 dB</strong> — SSL is for gentle shaping. Anything over 2 dB will sound unnatural on a mix bus.</div>
+    </div>
+    <div class="mistake-item">
+      <div class="mi-icon">❌</div>
+      <div class="mi-text"><strong>Using Gate on master</strong> — Gate/Expander is for individual tracks with noise issues. On the mix bus it will cause choppy, broken audio.</div>
+    </div>
+    <div class="mistake-item">
+      <div class="mi-icon">❌</div>
+      <div class="mi-text"><strong>Over-compressing (5–6 dB GR)</strong> — This kills the life of your mix. Keep gain reduction to 1–2 dB maximum.</div>
+    </div>
+    <div class="mistake-item">
+      <div class="mi-icon">❌</div>
+      <div class="mi-text"><strong>Boosting at 3 kHz</strong> — This is the harshness zone. Even a +1 dB boost here causes ear fatigue and listener drop-off.</div>
+    </div>
+    <div class="mistake-item">
+      <div class="mi-icon">❌</div>
+      <div class="mi-text"><strong>Not using EQ TO: FLT DYN S.C</strong> — Without sidechain filtering, your kick drum will pump-trigger the compressor every beat.</div>
+    </div>
+    <div class="mistake-item">
+      <div class="mi-icon">❌</div>
+      <div class="mi-text"><strong>Using SSL as a fix-all</strong> — If something needs 4+ dB of correction, fix it in the individual tracks first. SSL is a polisher, not a surgeon.</div>
+    </div>
+  </div>
+
+  <div style="margin-top:36px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;">
+    <p style="font-family:'Bebas Neue',sans-serif;font-size:1.6rem;letter-spacing:2px;margin-bottom:12px">🧠 The SSL Mindset</p>
+    <p style="color:var(--muted);font-size:.95rem;line-height:1.8">
+      Think of SSL G like seasoning food — a pinch of salt enhances the dish, a handful ruins it. Every move should be subtle, intentional, and in service of the overall feel. If you find yourself making big corrections, step back and fix the mix at the source first.
+      <br><br>
+      <span class="success">✔ Tighter bass &nbsp;&nbsp; ✔ Smoother mids &nbsp;&nbsp; ✔ Controlled highs &nbsp;&nbsp; ✔ Glued mix</span>
+    </p>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<footer>
+  <p>Built for <strong>Sam</strong> — SSL G Channel Complete Reference Guide</p>
+  <p style="margin-top:6px">🎛️ Mix with intention. Shape, don't fix.</p>
+</footer>
+
+</div><!-- /wrap -->
+
+<button id="btt" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+<script>
+  // Toggle modules
+  function toggleMod(id) {
+    const el = document.getElementById(id);
+    el.classList.toggle('open');
+  }
+
+  // Tab switching
+  function switchTab(name) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    // Find and activate the tab button
+    const tabs = document.querySelectorAll('.tab');
+    const names = ['filters','hf','hmf','lmf','lf','dyn','route'];
+    const idx = names.indexOf(name);
+    if(idx >= 0) tabs[idx].classList.add('active');
+  }
+
+  // Back to top
+  const btt = document.getElementById('btt');
+  window.addEventListener('scroll', () => {
+    btt.classList.toggle('visible', window.scrollY > 400);
+  });
+
+  // Animate cards on scroll
+  const cards = document.querySelectorAll('.intro-card, .span-card, .preset-card, .mistake-item, .knob-card');
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if(e.isIntersecting) {
+        e.target.style.opacity = '1';
+        e.target.style.transform = 'translateY(0)';
+      }
+    });
+  }, { threshold: 0.1 });
+  cards.forEach(c => {
+    c.style.opacity = '0';
+    c.style.transform = 'translateY(20px)';
+    c.style.transition = 'opacity .5s ease, transform .5s ease';
+    io.observe(c);
+  });
+</script>
+</body>
+</html>
