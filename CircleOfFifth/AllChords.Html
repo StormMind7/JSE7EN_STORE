@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChordMaster — The Complete Chord Universe</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080c14;
+  --surface: #0e1420;
+  --surface2: #131a28;
+  --border: rgba(255,255,255,0.07);
+  --text: #e8eaf0;
+  --muted: #7a8399;
+  --accent: #f5c842;
+  --accent2: #ff6b6b;
+  --accent3: #4ecdc4;
+  --accent4: #a78bfa;
+  --happy: #ffd60a;
+  --sad: #4895ef;
+  --cinematic: #9b5de5;
+  --jazzy: #f15bb5;
+  --tension: #f94144;
+  --warm: #f77f00;
+  --radius: 14px;
+  --radius-sm: 8px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* === NOISE OVERLAY === */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 1000;
+  opacity: 0.4;
+}
+
+/* === HEADER === */
+.hero {
+  position: relative;
+  text-align: center;
+  padding: 70px 20px 50px;
+  overflow: hidden;
+}
+.hero-glow {
+  position: absolute;
+  width: 700px; height: 700px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(245,200,66,0.12) 0%, transparent 70%);
+  top: -200px; left: 50%; transform: translateX(-50%);
+  pointer-events: none;
+}
+.hero h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2.8rem, 7vw, 5.5rem);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #fff 30%, var(--accent) 70%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.1;
+}
+.hero-sub {
+  margin-top: 14px;
+  font-size: 1.05rem;
+  color: var(--muted);
+  font-weight: 300;
+  letter-spacing: 0.04em;
+}
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+  background: rgba(245,200,66,0.12);
+  border: 1px solid rgba(245,200,66,0.25);
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-family: 'DM Mono', monospace;
+  letter-spacing: 0.1em;
+  padding: 6px 16px;
+  border-radius: 100px;
+  text-transform: uppercase;
+}
+
+/* === KEY SELECTOR === */
+.key-selector-wrap {
+  padding: 0 20px 10px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: linear-gradient(to bottom, rgba(8,12,20,0.97) 80%, transparent);
+  backdrop-filter: blur(12px);
+}
+.key-selector-inner {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 14px 0 8px;
+}
+.key-label {
+  font-size: 0.72rem;
+  font-family: 'DM Mono', monospace;
+  letter-spacing: 0.15em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.keys-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.key-btn {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  width: 52px; height: 52px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(.4,0,.2,1);
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+.key-btn::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: var(--accent);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.key-btn:hover { border-color: rgba(245,200,66,0.4); color: var(--text); transform: translateY(-2px); }
+.key-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #080c14;
+  box-shadow: 0 4px 20px rgba(245,200,66,0.35);
+  transform: translateY(-2px);
+}
+.key-btn.black-key { background: rgba(255,255,255,0.04); font-size: 0.88rem; }
+.key-btn.black-key.active { background: var(--accent); }
+
+/* === TAB BAR === */
+.tab-bar-wrap {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 20px 20px;
+}
+.tab-bar {
+  display: flex;
+  gap: 4px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 5px;
+  border: 1px solid var(--border);
+}
+.tab-btn {
+  flex: 1;
+  padding: 9px 10px;
+  border-radius: calc(var(--radius) - 4px);
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.02em;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active {
+  background: var(--accent);
+  color: #080c14;
+  font-weight: 700;
+}
+
+/* === MAIN CONTENT === */
+.content-wrap {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 20px 60px;
+}
+
+/* === CHORD GRID === */
+.section-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.section-title .key-highlight {
+  background: var(--accent);
+  color: #080c14;
+  padding: 2px 12px;
+  border-radius: 6px;
+  font-size: 1.2rem;
+}
+.section-sub {
+  color: var(--muted);
+  font-size: 0.88rem;
+  margin-bottom: 24px;
+  font-weight: 300;
+}
+
+.category-block {
+  margin-bottom: 32px;
+}
+.category-name {
+  font-size: 0.72rem;
+  font-family: 'DM Mono', monospace;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 0 0 10px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.category-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.chords-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+  gap: 10px;
+}
+
+.chord-card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(.4,0,.2,1);
+  position: relative;
+  overflow: hidden;
+}
+.chord-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--card-accent, var(--accent));
+  transform: scaleX(0);
+  transition: transform 0.25s ease;
+  transform-origin: left;
+}
+.chord-card:hover {
+  border-color: rgba(245,200,66,0.3);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.3);
+}
+.chord-card:hover::before { transform: scaleX(1); }
+.chord-card.active-card {
+  border-color: var(--card-accent, var(--accent));
+  background: var(--surface2);
+}
+.chord-card.active-card::before { transform: scaleX(1); }
+
+.chord-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 3px;
+}
+.chord-type {
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  margin-bottom: 8px;
+}
+.chord-notes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.note-pill {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.68rem;
+  background: rgba(255,255,255,0.06);
+  padding: 2px 7px;
+  border-radius: 4px;
+  color: var(--text);
+}
+.note-pill.root { background: rgba(245,200,66,0.18); color: var(--accent); }
+
+.chord-emotion-tag {
+  margin-top: 8px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+/* === CHORD DETAIL PANEL === */
+.chord-detail-panel {
+  position: fixed;
+  right: 0; top: 0; bottom: 0;
+  width: min(400px, 100vw);
+  background: var(--surface2);
+  border-left: 1px solid var(--border);
+  z-index: 500;
+  transform: translateX(100%);
+  transition: transform 0.35s cubic-bezier(.4,0,.2,1);
+  overflow-y: auto;
+  padding: 30px 28px;
+}
+.chord-detail-panel.open { transform: translateX(0); }
+.panel-close {
+  position: absolute;
+  top: 20px; right: 20px;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem;
+  transition: all 0.2s;
+}
+.panel-close:hover { color: var(--text); border-color: var(--text); }
+.panel-chord-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.5rem;
+  font-weight: 900;
+  margin-bottom: 4px;
+  margin-top: 8px;
+}
+.panel-chord-full {
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  font-size: 0.85rem;
+  margin-bottom: 20px;
+}
+.panel-section-label {
+  font-size: 0.68rem;
+  font-family: 'DM Mono', monospace;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+  margin-top: 20px;
+}
+.panel-notes-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.panel-note {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.9rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 6px 14px;
+  border-radius: 8px;
+}
+.panel-note.root-note {
+  background: rgba(245,200,66,0.15);
+  border-color: rgba(245,200,66,0.35);
+  color: var(--accent);
+}
+.panel-formula {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.85rem;
+  color: var(--muted);
+  background: var(--surface);
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+.emotion-display {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.emotion-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 100px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border: 1.5px solid;
+}
+.usage-text {
+  font-size: 0.88rem;
+  color: var(--muted);
+  line-height: 1.6;
+  background: var(--surface);
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+/* === EMOTION MAP TAB === */
+.emotion-map-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media(max-width:500px) { .emotion-map-grid { grid-template-columns: 1fr; } }
+
+.emotion-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s;
+}
+.emotion-section:hover { transform: translateY(-2px); }
+.emotion-section::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--em-color);
+}
+.emotion-section-icon {
+  font-size: 2rem;
+  margin-bottom: 8px;
+}
+.emotion-section-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--em-color);
+  margin-bottom: 4px;
+}
+.emotion-section-desc {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+.emotion-chords-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.em-chord-pill {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.72rem;
+  padding: 3px 9px;
+  border-radius: 5px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.em-chord-pill:hover {
+  background: rgba(255,255,255,0.12);
+  transform: scale(1.05);
+}
+
+/* === PIANO VISUAL === */
+.mini-piano {
+  position: relative;
+  height: 70px;
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  margin: 16px 0;
+  display: flex;
+  align-items: stretch;
+}
+.piano-key {
+  flex: 1;
+  background: #e8eaf0;
+  border-right: 1px solid #bbb;
+  border-bottom: 3px solid #aaa;
+  border-radius: 0 0 5px 5px;
+  transition: background 0.2s;
+  position: relative;
+}
+.piano-key.black-k {
+  background: #1a1a2e;
+  width: 60%;
+  height: 65%;
+  position: absolute;
+  top: 0;
+  border: 1px solid #444;
+  border-bottom: 3px solid #000;
+  border-radius: 0 0 4px 4px;
+  z-index: 2;
+}
+.piano-key.highlighted { background: var(--accent) !important; }
+.piano-key.highlighted.black-k { background: var(--accent) !important; filter: brightness(0.85); }
+.piano-wrap { position: relative; width: 100%; display: flex; }
+.piano-white { flex: 1; position: relative; }
+
+/* === SCALE INFO === */
+.scale-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+.scale-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+.scale-card-name { font-weight: 600; margin-bottom: 4px; font-size: 0.95rem; }
+.scale-card-notes {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+/* === SEARCH === */
+.search-wrap {
+  max-width: 860px;
+  margin: 0 auto 18px;
+  padding: 0 20px;
+}
+.search-box {
+  width: 100%;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 11px 16px 11px 42px;
+  color: var(--text);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.92rem;
+  outline: none;
+  transition: border-color 0.2s;
+  position: relative;
+}
+.search-box:focus { border-color: rgba(245,200,66,0.4); }
+.search-wrap-inner {
+  position: relative;
+}
+.search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-size: 1rem;
+  pointer-events: none;
+}
+
+/* === OVERLAY === */
+.panel-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 499;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+  backdrop-filter: blur(4px);
+}
+.panel-overlay.visible { opacity: 1; pointer-events: all; }
+
+/* === ANIMATIONS === */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.chord-card {
+  animation: fadeSlideUp 0.35s ease both;
+}
+
+/* === FOOTER === */
+.footer {
+  text-align: center;
+  padding: 30px 20px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  border-top: 1px solid var(--border);
+  font-family: 'DM Mono', monospace;
+}
+
+/* === RESPONSIVE === */
+@media(max-width: 600px) {
+  .chords-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+  .tab-btn { font-size: 0.7rem; padding: 8px 6px; }
+  .emotion-map-grid { grid-template-columns: 1fr; }
+}
+
+/* === TOOLTIP === */
+.tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1a2035;
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 0.72rem;
+  padding: 5px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 200;
+}
+.key-btn:hover .tooltip { opacity: 1; }
+
+/* scrollbar */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="panel-overlay" id="overlay" onclick="closePanel()"></div>
+
+<!-- CHORD DETAIL PANEL -->
+<div class="chord-detail-panel" id="detailPanel">
+  <button class="panel-close" onclick="closePanel()">✕</button>
+  <div id="panelContent"></div>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-glow"></div>
+  <h1>ChordMaster</h1>
+  <p class="hero-sub">The Complete Chord Universe · All Keys · All Emotions</p>
+  <div class="hero-badge">🎹 40 Chord Types · 12 Keys · Emotion Map</div>
+</div>
+
+<!-- KEY SELECTOR -->
+<div class="key-selector-wrap">
+  <div class="key-selector-inner">
+    <div class="key-label">Select Root Key</div>
+    <div class="keys-row" id="keysRow"></div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tab-bar-wrap">
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('chords',this)">All Chords</button>
+    <button class="tab-btn" onclick="switchTab('emotions',this)">Emotion Map</button>
+    <button class="tab-btn" onclick="switchTab('scales',this)">Scales</button>
+    <button class="tab-btn" onclick="switchTab('progressions',this)">Progressions</button>
+  </div>
+</div>
+
+<!-- SEARCH (chords tab) -->
+<div class="search-wrap" id="searchWrap">
+  <div class="search-wrap-inner">
+    <span class="search-icon">🔍</span>
+    <input class="search-box" id="searchBox" type="text" placeholder="Search chords… e.g. major7, sus4, dim" oninput="filterChords(this.value)">
+  </div>
+</div>
+
+<!-- CONTENT -->
+<div class="content-wrap" id="contentWrap"></div>
+
+<div class="footer">ChordMaster · Built for musicians · All 12 keys · 40+ chord types</div>
+
+<script>
+// ============================================================
+//  DATA
+// ============================================================
+const KEYS = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+const KEY_DISPLAY = {C:'C',Db:'D♭',D:'D',Eb:'E♭',E:'E',F:'F',Gb:'G♭',G:'G',Ab:'A♭',A:'A',Bb:'B♭',B:'B'};
+const BLACK_KEYS = new Set(['Db','Eb','Gb','Ab','Bb']);
+
+// Chromatic scale helpers
+const CHROMATIC = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+const ENHARMONIC = {Db:'C#',Eb:'D#',Gb:'F#',Ab:'G#',Bb:'A#'};
+
+function transpose(rootKey, semitones) {
+  const idx = CHROMATIC.indexOf(rootKey);
+  return CHROMATIC[(idx + semitones + 12) % 12];
+}
+
+function buildNotes(root, intervals) {
+  return intervals.map(i => {
+    const n = transpose(root, i);
+    return n;
+  });
+}
+
+// Emotion categories
+const EMOTIONS = {
+  happy:    { color: '#ffd60a', icon: '☀️', label: 'Happy / Bright',   desc: 'Uplifting, joyful, energetic vibes' },
+  sad:      { color: '#4895ef', icon: '🌧️', label: 'Sad / Melancholic', desc: 'Emotional depth, longing, introspection' },
+  cinematic:{ color: '#9b5de5', icon: '🎬', label: 'Cinematic / Epic',  desc: 'Dramatic, orchestral, grand scale' },
+  jazzy:    { color: '#f15bb5', icon: '🎷', label: 'Jazzy / Sophisticated', desc: 'Complex, smooth, urban, cool' },
+  tension:  { color: '#f94144', icon: '⚡', label: 'Tension / Dark',    desc: 'Dissonant, suspenseful, dark energy' },
+  warm:     { color: '#f77f00', icon: '🌅', label: 'Warm / Nostalgic',  desc: 'Soulful, organic, folk, heartfelt' },
+};
+
+// Chord definitions: [type, fullName, intervals, emotions[], formula, usage]
+const CHORD_DEFS = [
+  // BASIC
+  ['maj',   'Major',         [0,4,7],    ['happy','warm'],         '1–3–5',        'The foundational happy chord. Bright and resolved.'],
+  ['min',   'Minor',         [0,3,7],    ['sad','cinematic'],      '1–♭3–5',       'Melancholic and emotional. The backbone of sad music.'],
+  ['dim',   'Diminished',    [0,3,6],    ['tension'],              '1–♭3–♭5',      'Extremely tense and unstable. Creates suspense.'],
+  ['aug',   'Augmented',     [0,4,8],    ['tension','cinematic'],  '1–3–#5',       'Mysterious and unsettling. Common in film scores.'],
+  // SUSPENDED
+  ['sus2',  'Sus2',          [0,2,7],    ['warm','cinematic'],     '1–2–5',        'Open, floating sound. Great for intros.'],
+  ['sus4',  'Sus4',          [0,5,7],    ['tension','cinematic'],  '1–4–5',        'Unresolved, suspended. Wants to resolve to major.'],
+  ['7sus4', '7sus4',         [0,5,7,10], ['jazzy','tension'],      '1–4–5–♭7',     'Funky and soulful. Common in R&B.'],
+  // SEVENTH
+  ['maj7',  'Major 7',       [0,4,7,11], ['happy','jazzy','warm'], '1–3–5–7',      'Dreamy and lush. Quintessential jazz/pop chord.'],
+  ['dom7',  'Dominant 7',    [0,4,7,10], ['tension','jazzy'],      '1–3–5–♭7',     'Bluesy tension that wants to resolve. The V7 chord.'],
+  ['min7',  'Minor 7',       [0,3,7,10], ['sad','jazzy'],          '1–♭3–5–♭7',    'Smooth and cool. Beloved in jazz and neo-soul.'],
+  ['minmaj7','Minor Major 7',[0,3,7,11], ['cinematic','tension'],  '1–♭3–5–7',     'Dramatic and film-noir. Creates powerful tension.'],
+  ['hdim7', 'Half Dim (ø7)', [0,3,6,10], ['tension','cinematic'],  '1–♭3–♭5–♭7',  'Dark and unresolved. Common in jazz and film.'],
+  ['dim7',  'Diminished 7',  [0,3,6,9],  ['tension','cinematic'],  '1–♭3–♭5–𝄫7',  'Maximum tension. Symmetrical and dissonant.'],
+  // EXTENDED
+  ['9',     'Dominant 9',    [0,4,7,10,14],['jazzy','tension'],    '1–3–5–♭7–9',   'Rich and complex. Funk and jazz staple.'],
+  ['maj9',  'Major 9',       [0,4,7,11,14],['happy','jazzy'],      '1–3–5–7–9',    'Lush and beautiful. Pop and jazz.'],
+  ['min9',  'Minor 9',       [0,3,7,10,14],['sad','jazzy'],        '1–♭3–5–♭7–9',  'Deep and soulful. Neo-soul and R&B.'],
+  ['11',    '11th',          [0,4,7,10,14,17],['jazzy'],           '1–3–5–♭7–9–11','Very complex. Modern jazz voicings.'],
+  ['min11', 'Minor 11',      [0,3,7,10,14,17],['sad','jazzy'],     '1–♭3–5–♭7–9–11','Lush minor sound. Atmospheric.'],
+  ['13',    '13th',          [0,4,7,10,14,17,21],['jazzy'],        '1–3–5–♭7–9–11–13','Full jazz chord. Rich harmonic content.'],
+  ['min13', 'Minor 13',      [0,3,7,10,14,17,21],['jazzy','sad'],  '1–♭3–5–♭7–9–11–13','Lush and dark. Jazz and soul.'],
+  // ADD CHORDS
+  ['add9',  'Add 9',         [0,4,7,14], ['happy','warm'],         '1–3–5–9',      'Bright and open. No 7th, just added 9. Pop favorite.'],
+  ['add11', 'Add 11',        [0,4,7,17], ['warm','cinematic'],     '1–3–5–11',     'Colorful open sound. Acoustic guitar staple.'],
+  ['add13', 'Add 13',        [0,4,7,21], ['happy','jazzy'],        '1–3–5–13',     'Bright with an added color tone.'],
+  // ALTERED
+  ['7b5',   '7♭5',           [0,4,6,10], ['tension','jazzy'],      '1–3–♭5–♭7',    'Tritone substitute. Very jazzy and altered.'],
+  ['7s5',   '7#5',           [0,4,8,10], ['tension','cinematic'],  '1–3–#5–♭7',    'Augmented dominant. Mysterious resolution.'],
+  ['7b9',   '7♭9',           [0,4,7,10,13],['tension'],            '1–3–5–♭7–♭9',  'Dark and tense. Flamenco and jazz.'],
+  ['7s9',   '7#9',           [0,4,7,10,15],['tension','jazzy'],    '1–3–5–♭7–#9',  'The Hendrix chord. Rock and blues icon.'],
+  ['7s11',  '7#11',          [0,4,7,10,14,18],['jazzy','tension'], '1–3–5–♭7–9–#11','Lydian dominant sound. Fusion and jazz.'],
+  ['13b9',  '13♭9',          [0,4,7,10,13,21],['tension','jazzy'], '1–3–5–♭7–♭9–13','Complex jazz alteration. Maximum spice.'],
+  // SPECIAL
+  ['5',     'Power Chord',   [0,7],      ['warm','tension'],       '1–5',          'Raw energy. No 3rd so it neither major nor minor. Rock!'],
+  ['quartal','Quartal',      [0,5,10],   ['cinematic','jazzy'],    '1–4–♭7',       'Built in 4ths. Modern, ambiguous, orchestral.'],
+  ['cluster','Cluster',      [0,1,2],    ['tension'],              '1–♭2–2',       'Extreme dissonance. Avant-garde and experimental.'],
+];
+
+// Chord categories
+const CATEGORIES = [
+  { name:'Basic',     keys:['maj','min','dim','aug'],          color:'#f5c842' },
+  { name:'Suspended', keys:['sus2','sus4','7sus4'],            color:'#4ecdc4' },
+  { name:'Seventh',   keys:['maj7','dom7','min7','minmaj7','hdim7','dim7'], color:'#a78bfa' },
+  { name:'Extended',  keys:['9','maj9','min9','11','min11','13','min13'],   color:'#f15bb5' },
+  { name:'Add Chords',keys:['add9','add11','add13'],           color:'#ff9f43' },
+  { name:'Altered',   keys:['7b5','7s5','7b9','7s9','7s11','13b9'], color:'#f94144' },
+  { name:'Special',   keys:['5','quartal','cluster'],          color:'#26de81' },
+];
+
+// Scale definitions
+const SCALES = [
+  { name:'Major (Ionian)',      intervals:[0,2,4,5,7,9,11], mood:'Happy, bright, resolved' },
+  { name:'Natural Minor (Aeolian)', intervals:[0,2,3,5,7,8,10], mood:'Melancholic, dark' },
+  { name:'Harmonic Minor',     intervals:[0,2,3,5,7,8,11], mood:'Dramatic, exotic, tension' },
+  { name:'Melodic Minor',      intervals:[0,2,3,5,7,9,11], mood:'Smooth, jazz-friendly' },
+  { name:'Pentatonic Major',   intervals:[0,2,4,7,9],      mood:'Uplifting, folk, open' },
+  { name:'Pentatonic Minor',   intervals:[0,3,5,7,10],     mood:'Blues, rock, soulful' },
+  { name:'Blues Scale',        intervals:[0,3,5,6,7,10],   mood:'Gritty, expressive, raw' },
+  { name:'Dorian',             intervals:[0,2,3,5,7,9,10], mood:'Minor but with hope, jazz' },
+  { name:'Phrygian',           intervals:[0,1,3,5,7,8,10], mood:'Spanish, dark, flamenco' },
+  { name:'Lydian',             intervals:[0,2,4,6,7,9,11], mood:'Dreamy, floating, film' },
+  { name:'Mixolydian',         intervals:[0,2,4,5,7,9,10], mood:'Bluesy major, rock, folk' },
+  { name:'Locrian',            intervals:[0,1,3,5,6,8,10], mood:'Extremely dark and unstable' },
+];
+
+// Common progressions
+const PROGRESSIONS = [
+  { name:'I–IV–V',        chords:['maj','maj','maj'],            degrees:'I–IV–V',           mood:'🌞 Classic & timeless',       style:'Pop, Rock, Folk' },
+  { name:'I–V–vi–IV',     chords:['maj','maj','min','maj'],      degrees:'I–V–vi–IV',         mood:'🎵 Most popular ever',        style:'Modern Pop' },
+  { name:'ii–V–I',        chords:['min7','dom7','maj7'],         degrees:'ii–V–I',            mood:'🎷 Jazz standard',            style:'Jazz' },
+  { name:'I–vi–IV–V',     chords:['maj','min','maj','maj'],      degrees:'I–vi–IV–V',         mood:'💛 Doo-wop / 50s',            style:'Oldies, Pop' },
+  { name:'vi–IV–I–V',     chords:['min','maj','maj','maj'],      degrees:'vi–IV–I–V',         mood:'😢 Emotional pop',            style:'Pop Ballads' },
+  { name:'i–VII–VI–VII',  chords:['min','maj','maj','maj'],      degrees:'i–bVII–bVI–bVII',   mood:'🎸 Rock minor',               style:'Rock, Metal' },
+  { name:'I–IV–vi–V',     chords:['maj','maj','min','maj'],      degrees:'I–IV–vi–V',         mood:'✨ Anthemic',                 style:'Anthems' },
+  { name:'I–III–IV–iv',   chords:['maj','maj','maj','min'],      degrees:'I–III–IV–iv',       mood:'🌅 Beatles-esque',            style:'Classic Rock' },
+  { name:'i–iv–VII–III',  chords:['min','min','maj','maj'],      degrees:'i–iv–bVII–bIII',    mood:'🎬 Cinematic minor',          style:'Film scores' },
+  { name:'I–IIb–I',       chords:['maj','maj','maj'],            degrees:'I–bII–I',           mood:'🌶️ Andalusian flamenco',      style:'Flamenco, Spanish' },
+  { name:'I–maj7–IV–iv',  chords:['maj','maj7','maj','min'],     degrees:'I–Imaj7–IV–iv',     mood:'💫 Soul & R&B',               style:'Soul, R&B' },
+  { name:'i–VI–III–VII',  chords:['min','maj','maj','maj'],      degrees:'i–bVI–bIII–bVII',   mood:'🌌 Epic orchestral',          style:'Cinematic' },
+];
+
+// ============================================================
+//  STATE
+// ============================================================
+let currentKey = 'C';
+let currentTab = 'chords';
+let searchQuery = '';
+let activeCardEl = null;
+
+// ============================================================
+//  INIT
+// ============================================================
+function init() {
+  buildKeySelector();
+  renderTab();
+}
+
+function buildKeySelector() {
+  const row = document.getElementById('keysRow');
+  row.innerHTML = '';
+  KEYS.forEach(k => {
+    const btn = document.createElement('button');
+    btn.className = 'key-btn' + (BLACK_KEYS.has(k) ? ' black-key' : '') + (k === currentKey ? ' active' : '');
+    btn.innerHTML = `${KEY_DISPLAY[k]}<span class="tooltip">${k} ${BLACK_KEYS.has(k)?'(black key)':''}</span>`;
+    btn.onclick = () => selectKey(k);
+    row.appendChild(btn);
+  });
+}
+
+function selectKey(k) {
+  currentKey = k;
+  buildKeySelector();
+  renderTab();
+  closePanel();
+}
+
+function switchTab(tab, btn) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const sw = document.getElementById('searchWrap');
+  sw.style.display = tab === 'chords' ? '' : 'none';
+  renderTab();
+  closePanel();
+}
+
+function filterChords(val) {
+  searchQuery = val.toLowerCase();
+  if (currentTab === 'chords') renderChordsTab();
+}
+
+function renderTab() {
+  if (currentTab === 'chords') renderChordsTab();
+  else if (currentTab === 'emotions') renderEmotionsTab();
+  else if (currentTab === 'scales') renderScalesTab();
+  else if (currentTab === 'progressions') renderProgressionsTab();
+}
+
+// ============================================================
+//  CHORDS TAB
+// ============================================================
+function renderChordsTab() {
+  const wrap = document.getElementById('contentWrap');
+  const q = searchQuery;
+
+  let html = `
+    <div class="section-title">
+      <span>Chords in</span>
+      <span class="key-highlight">${KEY_DISPLAY[currentKey]}</span>
+    </div>
+    <p class="section-sub">Click any chord to explore notes, formula, and emotional character.</p>
+  `;
+
+  CATEGORIES.forEach(cat => {
+    const filtered = cat.keys.filter(ck => {
+      const def = CHORD_DEFS.find(d => d[0] === ck);
+      if (!def) return false;
+      if (!q) return true;
+      const chordName = currentKey + def[1];
+      return chordName.toLowerCase().includes(q) || def[0].includes(q) || def[1].toLowerCase().includes(q);
+    });
+    if (filtered.length === 0) return;
+
+    html += `
+      <div class="category-block">
+        <div class="category-name">
+          <span class="category-dot" style="background:${cat.color}"></span>
+          ${cat.name}
+        </div>
+        <div class="chords-grid">
+    `;
+
+    filtered.forEach((ck, idx) => {
+      const def = CHORD_DEFS.find(d => d[0] === ck);
+      if (!def) return;
+      const [type, fullName, intervals, emotions, formula, usage] = def;
+      const notes = buildNotes(currentKey, intervals);
+      const primEmotion = emotions[0];
+      const emColor = EMOTIONS[primEmotion]?.color || '#fff';
+      const emLabel = EMOTIONS[primEmotion]?.label || '';
+
+      const notePills = notes.map((n, i) => `<span class="note-pill${i===0?' root':''}">${n}</span>`).join('');
+
+      html += `
+        <div class="chord-card" style="--card-accent:${cat.color}; animation-delay:${idx*0.04}s"
+          onclick="openChordPanel('${ck}','${currentKey}')">
+          <div class="chord-name">${KEY_DISPLAY[currentKey]}${type === 'maj' ? '' : type}</div>
+          <div class="chord-type">${fullName}</div>
+          <div class="chord-notes">${notePills}</div>
+          <div class="chord-emotion-tag" style="background:${emColor}22; color:${emColor}">${EMOTIONS[primEmotion]?.icon} ${emLabel.split(' / ')[0]}</div>
+        </div>
+      `;
+    });
+
+    html += `</div></div>`;
+  });
+
+  wrap.innerHTML = html;
+}
+
+// ============================================================
+//  EMOTION MAP TAB
+// ============================================================
+function renderEmotionsTab() {
+  const wrap = document.getElementById('contentWrap');
+  const key = currentKey;
+  const kd = KEY_DISPLAY[key];
+
+  let html = `
+    <div class="section-title">
+      <span>Emotion Map for</span>
+      <span class="key-highlight">${kd}</span>
+    </div>
+    <p class="section-sub">Discover which chords in ${kd} evoke specific feelings and moods.</p>
+    <div class="emotion-map-grid">
+  `;
+
+  Object.entries(EMOTIONS).forEach(([emKey, em]) => {
+    const matchingChords = CHORD_DEFS.filter(def => def[3].includes(emKey));
+    const pills = matchingChords.map(def => {
+      const noteName = key + (def[0]==='maj'?'':def[0]);
+      return `<span class="em-chord-pill" onclick="openChordPanel('${def[0]}','${key}')" style="border-color:${em.color}33">${noteName}</span>`;
+    }).join('');
+
+    html += `
+      <div class="emotion-section" style="--em-color:${em.color}">
+        <div class="emotion-section-icon">${em.icon}</div>
+        <div class="emotion-section-name">${em.label}</div>
+        <div class="emotion-section-desc">${em.desc}</div>
+        <div class="emotion-chords-list">${pills}</div>
+      </div>
+    `;
+  });
+
+  html += `</div>`;
+  wrap.innerHTML = html;
+}
+
+// ============================================================
+//  SCALES TAB
+// ============================================================
+function renderScalesTab() {
+  const wrap = document.getElementById('contentWrap');
+  const key = currentKey;
+  const kd = KEY_DISPLAY[key];
+
+  let html = `
+    <div class="section-title">
+      <span>Scales in</span>
+      <span class="key-highlight">${kd}</span>
+    </div>
+    <p class="section-sub">All major scales and modes rooted in ${kd}.</p>
+    <div class="scale-grid">
+  `;
+
+  SCALES.forEach(sc => {
+    const notes = sc.intervals.map(i => transpose(key, i));
+    html += `
+      <div class="scale-card">
+        <div class="scale-card-name">${kd} ${sc.name}</div>
+        <div class="scale-card-notes" style="margin-bottom:6px">${notes.join(' · ')}</div>
+        <div style="font-size:0.72rem;color:var(--muted)">${sc.mood}</div>
+      </div>
+    `;
+  });
+
+  html += `</div>`;
+  wrap.innerHTML = html;
+}
+
+// ============================================================
+//  PROGRESSIONS TAB
+// ============================================================
+function renderProgressionsTab() {
+  const wrap = document.getElementById('contentWrap');
+  const key = currentKey;
+  const kd = KEY_DISPLAY[key];
+
+  // Degree offsets for major key
+  const DEGREE_OFFSETS = { I:0, II:2, III:4, IV:5, V:7, VI:9, VII:11, ii:2, iii:4, iv:5, vi:9, vii:11 };
+
+  let html = `
+    <div class="section-title">
+      <span>Progressions in</span>
+      <span class="key-highlight">${kd}</span>
+    </div>
+    <p class="section-sub">Famous chord progressions transposed to ${kd}.</p>
+  `;
+
+  PROGRESSIONS.forEach(prog => {
+    html += `
+      <div class="chord-card" style="--card-accent:var(--accent); margin-bottom:10px; animation:none">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
+          <div>
+            <div class="chord-name" style="font-size:1.1rem">${prog.name}</div>
+            <div class="chord-type">${prog.degrees}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:0.78rem;color:var(--muted)">${prog.style}</div>
+            <div style="font-size:0.85rem;margin-top:2px">${prog.mood}</div>
+          </div>
+        </div>
+        <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px">
+          ${prog.degrees.split('–').map(deg => {
+            deg = deg.trim().replace('♭','b').replace('#','s');
+            const cleanDeg = deg.replace(/[^IVivbsmaj0-9]/g,'');
+            return `<span style="background:rgba(245,200,66,0.12);border:1px solid rgba(245,200,66,0.25);color:var(--accent);padding:5px 12px;border-radius:8px;font-family:'DM Mono',monospace;font-size:0.82rem">${deg}</span>`;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  });
+
+  wrap.innerHTML = html;
+}
+
+// ============================================================
+//  CHORD DETAIL PANEL
+// ============================================================
+function openChordPanel(type, key) {
+  const def = CHORD_DEFS.find(d => d[0] === type);
+  if (!def) return;
+  const [, fullName, intervals, emotions, formula, usage] = def;
+  const kd = KEY_DISPLAY[key];
+  const notes = buildNotes(key, intervals);
+  const chordShortName = key + (type === 'maj' ? '' : type);
+
+  // Piano visualization
+  const piano = buildPianoSVG(key, notes);
+
+  // Emotion tags
+  const emTags = emotions.map(e => {
+    const em = EMOTIONS[e];
+    return `<div class="emotion-tag" style="color:${em.color};border-color:${em.color};background:${em.color}18">
+      ${em.icon} ${em.label}
+    </div>`;
+  }).join('');
+
+  // Interval labels
+  const INTERVAL_NAMES = ['R','♭2','2','♭3','3','4','♭5','5','♭6','6','♭7','7','8','♭9','9','♭10','10','11','—','♭13','—','13'];
+  const intervalStr = intervals.map((i,idx) => `${INTERVAL_NAMES[i] || i}`).join(' – ');
+
+  const noteItems = notes.map((n,i) => `<div class="panel-note${i===0?' root-note':''}">${n}</div>`).join('');
+
+  document.getElementById('panelContent').innerHTML = `
+    <div class="panel-chord-name">${kd}${type === 'maj' ? '' : type}</div>
+    <div class="panel-chord-full">${kd} ${fullName}</div>
+    ${piano}
+    <div class="panel-section-label">Notes</div>
+    <div class="panel-notes-row">${noteItems}</div>
+    <div class="panel-section-label">Interval Formula</div>
+    <div class="panel-formula">${formula} &nbsp;·&nbsp; ${intervalStr}</div>
+    <div class="panel-section-label">Emotion & Character</div>
+    <div class="emotion-display">${emTags}</div>
+    <div class="panel-section-label">Usage & Context</div>
+    <div class="usage-text">${usage}</div>
+  `;
+
+  document.getElementById('detailPanel').classList.add('open');
+  document.getElementById('overlay').classList.add('visible');
+}
+
+function closePanel() {
+  document.getElementById('detailPanel').classList.remove('open');
+  document.getElementById('overlay').classList.remove('visible');
+}
+
+function buildPianoSVG(rootKey, highlightedNotes) {
+  // Draw a 2-octave mini piano
+  const whites = ['C','D','E','F','G','A','B'];
+  const noteSet = new Set(highlightedNotes);
+  const highlightColor = '#f5c842';
+  const rootColor = '#ff6b6b';
+
+  const wKeyW = 28, wKeyH = 68, bKeyW = 18, bKeyH = 44;
+  const octaves = 2;
+  const totalWhites = whites.length * octaves;
+  const svgW = totalWhites * wKeyW + 2;
+  const svgH = wKeyH + 4;
+
+  // Position of black keys relative to white key group start
+  const blackOffsets = { C:0.6, D:1.6, F:3.6, G:4.6, A:5.6 };
+
+  let wRects = '', bRects = '';
+
+  for (let oct = 0; oct < octaves; oct++) {
+    whites.forEach((wn, wi) => {
+      const note = wn; // just note name
+      const x = (oct * whites.length + wi) * wKeyW + 1;
+      const isRoot = highlightedNotes[0] === note;
+      const isHL = noteSet.has(note);
+      const fill = isRoot ? rootColor : isHL ? highlightColor : '#e8eaf0';
+      const stroke = isRoot || isHL ? 'none' : '#bbb';
+      wRects += `<rect x="${x}" y="2" width="${wKeyW-1}" height="${wKeyH}" rx="3" fill="${fill}" stroke="${stroke}" stroke-width="1"/>`;
+      if (isHL) {
+        const label = isRoot ? '●' : '·';
+        wRects += `<text x="${x + (wKeyW-1)/2}" y="${wKeyH-6}" text-anchor="middle" font-size="9" fill="${isRoot?'#fff':'#444'}" font-family="DM Mono,monospace">${note}</text>`;
+      }
+    });
+
+    Object.entries(blackOffsets).forEach(([bn, offset]) => {
+      const note = bn;
+      const x = (oct * whites.length + offset) * wKeyW - bKeyW/2 + 1;
+      // Map to chromatic: C#=Db, D#=Eb etc.
+      const chromaticMap = { C:'Db', D:'Eb', F:'Gb', G:'Ab', A:'Bb' };
+      const bNote = chromaticMap[bn];
+      const isRoot = highlightedNotes[0] === bNote;
+      const isHL = noteSet.has(bNote);
+      const fill = isRoot ? rootColor : isHL ? highlightColor : '#1a1a2e';
+      bRects += `<rect x="${x}" y="2" width="${bKeyW}" height="${bKeyH}" rx="2" fill="${fill}"/>`;
+    });
+  }
+
+  return `<div style="overflow-x:auto;margin:16px 0">
+    <svg viewBox="0 0 ${svgW} ${svgH}" width="${svgW}" height="${svgH}" xmlns="http://www.w3.org/2000/svg"
+      style="display:block;background:#131a28;border-radius:8px;border:1px solid rgba(255,255,255,0.07);padding:2px">
+      ${wRects}${bRects}
+    </svg>
+    <div style="font-size:0.68rem;color:var(--muted);font-family:'DM Mono',monospace;margin-top:5px">
+      <span style="color:#ff6b6b">■</span> Root &nbsp; <span style="color:#f5c842">■</span> Chord tones
+    </div>
+  </div>`;
+}
+
+// ============================================================
+//  START
+// ============================================================
+init();
+</script>
+</body>
+</html>
