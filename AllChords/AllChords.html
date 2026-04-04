@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Harmonia — Music Theory</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1c1c27;
+    --border: rgba(255,255,255,0.06);
+    --border2: rgba(255,255,255,0.12);
+    --text: #f0ede8;
+    --muted: #8a8799;
+    --accent: #c9a96e;
+    --accent2: #7c6fc4;
+    --accent3: #5dbaaa;
+    --white-key: #f5f0e8;
+    --black-key: #1a1825;
+    --glow: rgba(201,169,110,0.15);
+    --radius: 12px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 400;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed; top:0; left:0; right:0; z-index:100;
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 0 2.5rem;
+    height: 64px;
+    background: rgba(10,10,15,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+  .logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    color: var(--accent);
+    letter-spacing: 0.02em;
+  }
+  .logo span { color: var(--text); font-style:italic; }
+  .nav-tabs { display:flex; gap:4px; }
+  .nav-tab {
+    padding: 8px 20px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background: none;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .nav-tab:hover { color: var(--text); background: var(--surface2); }
+  .nav-tab.active {
+    color: var(--accent);
+    border-color: rgba(201,169,110,0.3);
+    background: rgba(201,169,110,0.08);
+  }
+
+  /* PAGES */
+  .page { display:none; padding-top: 64px; min-height: 100vh; }
+  .page.active { display:block; }
+
+  /* === THEORY PAGE === */
+  .theory-hero {
+    padding: 5rem 2.5rem 3rem;
+    text-align: center;
+    position: relative;
+  }
+  .theory-hero::before {
+    content:'';
+    position:absolute; top:0; left:50%; transform:translateX(-50%);
+    width: 600px; height: 300px;
+    background: radial-gradient(ellipse, rgba(201,169,110,0.08) 0%, transparent 70%);
+    pointer-events:none;
+  }
+  .theory-hero h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    font-weight: 400;
+    line-height: 1.1;
+    margin-bottom: 1rem;
+  }
+  .theory-hero h1 em { color: var(--accent); font-style: italic; }
+  .theory-hero p {
+    color: var(--muted);
+    font-size: 1.05rem;
+    max-width: 480px;
+    margin: 0 auto;
+    line-height: 1.7;
+  }
+
+  .theory-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.5px;
+    background: var(--border);
+    margin: 2rem 2.5rem;
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .theory-section {
+    background: var(--surface);
+    padding: 2rem;
+  }
+  .section-label {
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 1.2rem;
+    display:flex; align-items:center; gap:8px;
+  }
+  .section-label::after {
+    content:'';flex:1;height:1px;background:rgba(201,169,110,0.2);
+  }
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    font-weight: 400;
+    margin-bottom: 1.5rem;
+  }
+
+  /* Key table */
+  .key-table { width:100%; border-collapse:collapse; font-size:0.85rem; }
+  .key-table th {
+    text-align:left; padding:8px 10px;
+    color: var(--muted); font-weight:500;
+    border-bottom: 1px solid var(--border2);
+    font-size:0.75rem; letter-spacing:0.05em;
+  }
+  .key-table td { padding:10px 10px; border-bottom:1px solid var(--border); vertical-align:top; }
+  .key-table tr:last-child td { border-bottom:none; }
+  .key-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .key-name {
+    font-family:'DM Mono', monospace;
+    color: var(--accent);
+    font-weight:500; white-space:nowrap;
+  }
+  .scale-notes { color: var(--muted); font-size:0.8rem; line-height:1.6; }
+  .chord-list { display:flex; flex-wrap:wrap; gap:4px; }
+  .chord-pill {
+    padding:2px 8px;
+    border-radius:4px;
+    font-family:'DM Mono', monospace;
+    font-size:0.73rem;
+    background: var(--surface2);
+    border:1px solid var(--border);
+    color: var(--text);
+  }
+  .chord-pill.minor { color: var(--accent2); border-color:rgba(124,111,196,0.3); }
+  .chord-pill.dim { color: #e06c6c; border-color:rgba(224,108,108,0.3); }
+  .chord-pill.major-chord { color: var(--accent3); border-color:rgba(93,186,170,0.3); }
+
+  /* Formula box */
+  .formula-box {
+    background: var(--surface2);
+    border:1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-top: 1rem;
+    font-family: 'DM Mono', monospace;
+  }
+  .formula-row {
+    display:flex; gap:6px; align-items:center; flex-wrap:wrap;
+    margin-bottom: 0.6rem;
+  }
+  .formula-row:last-child { margin-bottom:0; }
+  .formula-label { color:var(--muted); font-size:0.8rem; min-width:90px; }
+  .step-badge {
+    padding:4px 10px; border-radius:6px;
+    font-size:0.8rem; font-weight:500;
+  }
+  .step-w { background:rgba(201,169,110,0.12); color:var(--accent); border:1px solid rgba(201,169,110,0.2); }
+  .step-h { background:rgba(124,111,196,0.12); color:var(--accent2); border:1px solid rgba(124,111,196,0.2); }
+
+  .pattern-row {
+    display:grid; grid-template-columns: repeat(7,1fr); gap:4px; margin-top:1rem;
+  }
+  .pattern-cell {
+    text-align:center; padding:10px 4px;
+    border-radius:8px; font-family:'DM Mono',monospace; font-size:0.72rem;
+  }
+  .pat-I { background:rgba(93,186,170,0.12); color:var(--accent3); border:1px solid rgba(93,186,170,0.2); }
+  .pat-ii { background:rgba(124,111,196,0.12); color:var(--accent2); border:1px solid rgba(124,111,196,0.2); }
+  .pat-dim { background:rgba(224,108,108,0.12); color:#e06c6c; border:1px solid rgba(224,108,108,0.2); }
+  .pat-label { font-size:0.65rem; color:var(--muted); margin-top:3px; }
+
+  /* === PIANO PAGE === */
+  .piano-page {
+    padding-top: 64px;
+    min-height: 100vh;
+    display:flex; flex-direction:column;
+    align-items:center;
+  }
+  .piano-hero {
+    text-align:center;
+    padding: 3rem 2rem 2rem;
+    position:relative;
+  }
+  .piano-hero::before {
+    content:'';
+    position:absolute; top:0; left:50%; transform:translateX(-50%);
+    width:700px; height:280px;
+    background: radial-gradient(ellipse, rgba(124,111,196,0.1) 0%, transparent 70%);
+    pointer-events:none;
+  }
+  .piano-hero h2 {
+    font-family:'Playfair Display',serif;
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    font-weight:400; margin-bottom:0.5rem;
+  }
+  .piano-hero h2 em { color:var(--accent2); font-style:italic; }
+  .piano-hero p { color:var(--muted); font-size:0.95rem; }
+
+  /* Controls */
+  .piano-controls {
+    display:flex; gap:1rem; align-items:center;
+    flex-wrap:wrap; justify-content:center;
+    padding: 0 2rem 2rem;
+  }
+  .ctrl-group { display:flex; flex-direction:column; gap:6px; }
+  .ctrl-label {
+    font-size:0.7rem; font-weight:500;
+    letter-spacing:0.1em; text-transform:uppercase;
+    color:var(--muted);
+  }
+  .styled-select {
+    appearance:none;
+    background: var(--surface2);
+    border:1px solid var(--border2);
+    border-radius:10px;
+    color: var(--text);
+    font-family:'DM Sans',sans-serif;
+    font-size:0.95rem;
+    padding:10px 36px 10px 14px;
+    cursor:pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238a8799' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;
+    background-position:right 12px center;
+    transition:border-color 0.2s, box-shadow 0.2s;
+    min-width:160px;
+  }
+  .styled-select:hover { border-color:rgba(255,255,255,0.2); }
+  .styled-select:focus { outline:none; border-color:var(--accent2); box-shadow:0 0 0 3px rgba(124,111,196,0.15); }
+  .styled-select option { background: #1c1c27; }
+
+  /* Piano wrapper */
+  .piano-wrapper {
+    width:100%; max-width:900px;
+    padding: 0 1rem 2rem;
+  }
+  .piano-container {
+    background: linear-gradient(180deg, #1a1825 0%, #0f0e18 100%);
+    border-radius: 20px;
+    padding: 28px 28px 0 28px;
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow:
+      0 0 60px rgba(0,0,0,0.8),
+      0 0 0 1px rgba(255,255,255,0.04),
+      inset 0 1px 0 rgba(255,255,255,0.06);
+    position:relative;
+  }
+  .piano-brand {
+    text-align:center;
+    font-family:'Playfair Display',serif;
+    font-size:0.85rem;
+    color:rgba(255,255,255,0.2);
+    letter-spacing:0.25em;
+    text-transform:uppercase;
+    margin-bottom:20px;
+  }
+  .piano-keys {
+    display:flex;
+    position:relative;
+    height:200px;
+    user-select:none;
+    justify-content:center;
+  }
+  .white-key {
+    position:relative;
+    width:52px;
+    height:190px;
+    background: linear-gradient(180deg, #f5f0e8 0%, #ede8df 100%);
+    border-radius: 0 0 10px 10px;
+    border: 1px solid rgba(0,0,0,0.15);
+    border-top: none;
+    cursor:pointer;
+    transition: background 0.1s, transform 0.08s;
+    flex-shrink:0;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.8);
+    display:flex; align-items:flex-end; justify-content:center;
+    padding-bottom:12px;
+    z-index:1;
+  }
+  .white-key:hover { background: linear-gradient(180deg, #fff 0%, #f5f0e8 100%); }
+  .white-key.pressed {
+    background: linear-gradient(180deg, #f0e8d0 0%, #e8d8b0 100%) !important;
+    transform: scaleY(0.98);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.4), inset 0 2px 0 rgba(0,0,0,0.05);
+  }
+  .white-key.highlighted {
+    background: linear-gradient(180deg, #e8d5a8 0%, #d4b87a 100%);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.4), 0 0 20px rgba(201,169,110,0.4), inset 0 1px 0 rgba(255,255,255,0.6);
+  }
+  .white-key.chord-hl {
+    background: linear-gradient(180deg, #c5d4f0 0%, #a0b8e8 100%);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.4), 0 0 20px rgba(124,111,196,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+  }
+  .key-label {
+    font-size:0.65rem;
+    font-weight:500;
+    color:rgba(0,0,0,0.35);
+    letter-spacing:0.03em;
+  }
+  .white-key.highlighted .key-label,
+  .white-key.chord-hl .key-label { color:rgba(0,0,0,0.55); }
+
+  .black-key {
+    position:absolute;
+    width:34px;
+    height:120px;
+    background: linear-gradient(180deg, #2a2535 0%, #1a1825 60%, #0f0e18 100%);
+    border-radius: 0 0 8px 8px;
+    cursor:pointer;
+    z-index:2;
+    transition: background 0.1s, transform 0.08s;
+    box-shadow: 0 6px 12px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.08);
+    display:flex; align-items:flex-end; justify-content:center;
+    padding-bottom:8px;
+  }
+  .black-key:hover { background: linear-gradient(180deg, #352f45 0%, #252030 60%, #181520 100%); }
+  .black-key.pressed {
+    background: linear-gradient(180deg, #1a1825 0%, #0f0e18 100%) !important;
+    transform: scaleY(0.97);
+    box-shadow: 0 3px 6px rgba(0,0,0,0.7);
+  }
+  .black-key.highlighted {
+    background: linear-gradient(180deg, #6b5830 0%, #4a3d20 60%, #2d2510 100%);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.7), 0 0 20px rgba(201,169,110,0.4);
+  }
+  .black-key.chord-hl {
+    background: linear-gradient(180deg, #4a4580 0%, #2d2a60 60%, #1a1840 100%);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.7), 0 0 20px rgba(124,111,196,0.5);
+  }
+  .black-key .key-label { font-size:0.55rem; color:rgba(255,255,255,0.3); }
+  .black-key.highlighted .key-label,
+  .black-key.chord-hl .key-label { color:rgba(255,255,255,0.6); }
+
+  .piano-foot {
+    height:28px;
+    background: linear-gradient(180deg, #0a0912 0%, #060509 100%);
+    margin: 0 -28px;
+    border-radius: 0 0 18px 18px;
+    border-top:1px solid rgba(0,0,0,0.5);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .piano-foot-strip {
+    width:80px; height:4px;
+    background:rgba(255,255,255,0.05);
+    border-radius:2px;
+  }
+
+  /* Info panels */
+  .info-panels {
+    width:100%; max-width:900px;
+    padding: 0 1rem 3rem;
+    display:grid; grid-template-columns:1fr 1fr; gap:1rem;
+  }
+  @media(max-width:600px) { .info-panels { grid-template-columns:1fr; } }
+
+  .info-card {
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:1.5rem;
+  }
+  .info-card-title {
+    font-size:0.7rem; font-weight:500;
+    letter-spacing:0.12em; text-transform:uppercase;
+    color:var(--accent); margin-bottom:1rem;
+  }
+  .scale-display {
+    display:flex; flex-wrap:wrap; gap:6px; margin-bottom:0.5rem;
+  }
+  .note-badge {
+    padding:6px 14px;
+    border-radius:8px;
+    font-family:'DM Mono',monospace;
+    font-size:0.9rem;
+    background:var(--surface2);
+    border:1px solid var(--border2);
+    color:var(--text);
+    transition:all 0.2s;
+  }
+  .note-badge.root { background:rgba(201,169,110,0.15); color:var(--accent); border-color:rgba(201,169,110,0.3); font-weight:500; }
+
+  .chords-display { display:flex; flex-direction:column; gap:8px; }
+  .chord-item {
+    display:flex; align-items:center; gap:10px;
+    padding:10px 12px;
+    border-radius:8px;
+    background:var(--surface2);
+    border:1px solid var(--border);
+    cursor:pointer;
+    transition:all 0.2s;
+  }
+  .chord-item:hover { border-color:var(--border2); background:rgba(255,255,255,0.04); }
+  .chord-item.playing { border-color:rgba(124,111,196,0.4); background:rgba(124,111,196,0.08); }
+  .chord-numeral {
+    font-family:'DM Mono',monospace; font-size:0.75rem;
+    color:var(--muted); min-width:28px;
+  }
+  .chord-name {
+    font-family:'DM Mono',monospace; font-size:0.95rem;
+    flex:1;
+  }
+  .chord-type-badge {
+    font-size:0.65rem; padding:3px 8px;
+    border-radius:4px; font-weight:500;
+  }
+  .badge-maj { background:rgba(93,186,170,0.15); color:var(--accent3); }
+  .badge-min { background:rgba(124,111,196,0.15); color:var(--accent2); }
+  .badge-dim { background:rgba(224,108,108,0.15); color:#e06c6c; }
+
+  /* Common chords panel */
+  .common-chords {
+    width:100%; max-width:900px;
+    padding: 0 1rem 3rem;
+  }
+  .common-card {
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:1.5rem;
+  }
+  .common-title {
+    font-size:0.7rem; font-weight:500;
+    letter-spacing:0.12em; text-transform:uppercase;
+    color:var(--accent2); margin-bottom:1.2rem;
+  }
+  .common-grid { display:flex; flex-wrap:wrap; gap:10px; }
+  .common-item {
+    padding:12px 18px;
+    border-radius:10px;
+    background:var(--surface2);
+    border:1px solid var(--border2);
+    cursor:pointer;
+    transition:all 0.2s;
+    text-align:center;
+    min-width:90px;
+  }
+  .common-item:hover { transform:translateY(-2px); border-color:rgba(124,111,196,0.4); box-shadow:0 4px 20px rgba(124,111,196,0.15); }
+  .common-item.playing { border-color:rgba(124,111,196,0.5); background:rgba(124,111,196,0.1); }
+  .common-numeral { font-size:0.7rem; color:var(--muted); margin-bottom:4px; }
+  .common-name { font-family:'DM Mono',monospace; font-size:1rem; color:var(--text); }
+  .prog-label {
+    font-size:0.8rem; color:var(--muted);
+    margin-top:1rem; padding-top:1rem;
+    border-top:1px solid var(--border);
+    line-height:1.6;
+  }
+  .prog-label strong { color:var(--text); }
+
+  .legend {
+    display:flex; gap:16px; flex-wrap:wrap;
+    padding:0 1rem 1rem; max-width:900px; width:100%;
+    font-size:0.75rem; color:var(--muted);
+  }
+  .legend-item { display:flex; align-items:center; gap:6px; }
+  .legend-dot { width:10px; height:10px; border-radius:3px; }
+  .dot-scale { background:rgba(201,169,110,0.5); }
+  .dot-chord { background:rgba(124,111,196,0.5); }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">Harmon<span>ia</span></div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('theory')">Theory</button>
+    <button class="nav-tab" onclick="showPage('piano')">Piano</button>
+  </div>
+</nav>
+
+<!-- THEORY PAGE -->
+<div class="page active" id="page-theory">
+  <div class="theory-hero">
+    <h1>Music <em>Theory</em><br>Reference</h1>
+    <p>Every major and minor key, scale, and diatonic chord — beautifully organized for quick reference.</p>
+  </div>
+
+  <div class="theory-grid">
+    <!-- Major Natural -->
+    <div class="theory-section">
+      <div class="section-label">Major Keys</div>
+      <div class="section-title">Natural Notes</div>
+      <table class="key-table">
+        <thead><tr><th>Key</th><th>Scale</th><th>Diatonic Chords</th></tr></thead>
+        <tbody id="major-natural-table"></tbody>
+      </table>
+    </div>
+    <!-- Major Flat -->
+    <div class="theory-section">
+      <div class="section-label">Major Keys</div>
+      <div class="section-title">Flat Keys</div>
+      <table class="key-table">
+        <thead><tr><th>Key</th><th>Scale</th><th>Diatonic Chords</th></tr></thead>
+        <tbody id="major-flat-table"></tbody>
+      </table>
+    </div>
+    <!-- Minor Natural -->
+    <div class="theory-section">
+      <div class="section-label">Minor Keys</div>
+      <div class="section-title">Natural Notes</div>
+      <table class="key-table">
+        <thead><tr><th>Key</th><th>Scale</th><th>Diatonic Chords</th></tr></thead>
+        <tbody id="minor-natural-table"></tbody>
+      </table>
+    </div>
+    <!-- Minor Flat -->
+    <div class="theory-section">
+      <div class="section-label">Minor Keys</div>
+      <div class="section-title">Flat Keys</div>
+      <table class="key-table">
+        <thead><tr><th>Key</th><th>Scale</th><th>Diatonic Chords</th></tr></thead>
+        <tbody id="minor-flat-table"></tbody>
+      </table>
+    </div>
+    <!-- Formulas -->
+    <div class="theory-section" style="grid-column:1/-1">
+      <div class="section-label">Scale Formulas</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; flex-wrap:wrap;">
+        <div>
+          <div class="section-title">Major Scale</div>
+          <div class="formula-box">
+            <div class="formula-row">
+              <span class="formula-label">Formula:</span>
+              <span class="step-badge step-w">W</span><span class="step-badge step-w">W</span><span class="step-badge step-h">H</span><span class="step-badge step-w">W</span><span class="step-badge step-w">W</span><span class="step-badge step-w">W</span><span class="step-badge step-h">H</span>
+            </div>
+          </div>
+          <div class="pattern-row" style="margin-top:1rem;">
+            <div class="pattern-cell pat-I">I<div class="pat-label">Maj</div></div>
+            <div class="pattern-cell pat-ii">ii<div class="pat-label">min</div></div>
+            <div class="pattern-cell pat-ii">iii<div class="pat-label">min</div></div>
+            <div class="pattern-cell pat-I">IV<div class="pat-label">Maj</div></div>
+            <div class="pattern-cell pat-I">V<div class="pat-label">Maj</div></div>
+            <div class="pattern-cell pat-ii">vi<div class="pat-label">min</div></div>
+            <div class="pattern-cell pat-dim">vii°<div class="pat-label">dim</div></div>
+          </div>
+        </div>
+        <div>
+          <div class="section-title">Natural Minor Scale</div>
+          <div class="formula-box">
+            <div class="formula-row">
+              <span class="formula-label">Formula:</span>
+              <span class="step-badge step-w">W</span><span class="step-badge step-h">H</span><span class="step-badge step-w">W</span><span class="step-badge step-w">W</span><span class="step-badge step-h">H</span><span class="step-badge step-w">W</span><span class="step-badge step-w">W</span>
+            </div>
+          </div>
+          <div class="pattern-row" style="margin-top:1rem;">
+            <div class="pattern-cell pat-ii">i<div class="pat-label">min</div></div>
+            <div class="pattern-cell pat-dim">ii°<div class="pat-label">dim</div></div>
+            <div class="pattern-cell pat-I">III<div class="pat-label">Maj</div></div>
+            <div class="pattern-cell pat-ii">iv<div class="pat-label">min</div></div>
+            <div class="pattern-cell pat-ii">v<div class="pat-label">min</div></div>
+            <div class="pattern-cell pat-I">VI<div class="pat-label">Maj</div></div>
+            <div class="pattern-cell pat-I">VII<div class="pat-label">Maj</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PIANO PAGE -->
+<div class="page" id="page-piano">
+  <div class="piano-page">
+    <div class="piano-hero">
+      <h2>Interactive <em>Piano</em></h2>
+      <p>Choose a key and type — explore scales, diatonic chords, and common progressions</p>
+    </div>
+
+    <div class="piano-controls">
+      <div class="ctrl-group">
+        <div class="ctrl-label">Type</div>
+        <select class="styled-select" id="type-select" onchange="updatePiano()">
+          <option value="major">Major</option>
+          <option value="minor">Minor</option>
+        </select>
+      </div>
+      <div class="ctrl-group">
+        <div class="ctrl-label">Root Key</div>
+        <select class="styled-select" id="key-select" onchange="updatePiano()">
+          <option value="C">C</option>
+          <option value="D">D</option>
+          <option value="E">E</option>
+          <option value="F">F</option>
+          <option value="G">G</option>
+          <option value="A">A</option>
+          <option value="B">B</option>
+          <option value="Db">D♭</option>
+          <option value="Eb">E♭</option>
+          <option value="Gb">G♭</option>
+          <option value="Ab">A♭</option>
+          <option value="Bb">B♭</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="piano-wrapper">
+      <div class="piano-container">
+        <div class="piano-brand">Harmonia Grand</div>
+        <div class="piano-keys" id="piano-keys"></div>
+        <div class="piano-foot"><div class="piano-foot-strip"></div></div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot dot-scale"></div>Scale note</div>
+      <div class="legend-item"><div class="legend-dot dot-chord"></div>Chord highlight (click chord below)</div>
+    </div>
+
+    <div class="info-panels">
+      <div class="info-card">
+        <div class="info-card-title">Scale Notes</div>
+        <div class="scale-display" id="scale-display"></div>
+      </div>
+      <div class="info-card">
+        <div class="info-card-title">Diatonic Chords — click to highlight</div>
+        <div class="chords-display" id="chords-display"></div>
+      </div>
+    </div>
+
+    <div class="common-chords">
+      <div class="common-card">
+        <div class="common-title">Common Chord Progressions</div>
+        <div class="common-grid" id="common-grid"></div>
+        <div class="prog-label" id="prog-desc"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== DATA =====
+const CHROMATIC = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const NOTE_ALIASES = {
+  'Db':'C#','Eb':'D#','Gb':'F#','Ab':'G#','Bb':'A#',
+  'Fb':'E','Cb':'B','Bbb':'A#','Ebb':'D#','Bbb':'A#'
+};
+const DISPLAY_NAMES = {
+  'C':'C','C#':'C#','D':'D','D#':'D#','E':'E','F':'F',
+  'F#':'F#','G':'G','G#':'G#','A':'A','A#':'A#','B':'B',
+  'Db':'D♭','Eb':'E♭','Gb':'G♭','Ab':'A♭','Bb':'B♭'
+};
+
+const KEY_DATA = {
+  major: {
+    'C':  { scale:['C','D','E','F','G','A','B'],      chords:['C','Dm','Em','F','G','Am','Bdim'] },
+    'D':  { scale:['D','E','F#','G','A','B','C#'],    chords:['D','Em','F#m','G','A','Bm','C#dim'] },
+    'E':  { scale:['E','F#','G#','A','B','C#','D#'],  chords:['E','F#m','G#m','A','B','C#m','D#dim'] },
+    'F':  { scale:['F','G','A','Bb','C','D','E'],     chords:['F','Gm','Am','Bb','C','Dm','Edim'] },
+    'G':  { scale:['G','A','B','C','D','E','F#'],     chords:['G','Am','Bm','C','D','Em','F#dim'] },
+    'A':  { scale:['A','B','C#','D','E','F#','G#'],   chords:['A','Bm','C#m','D','E','F#m','G#dim'] },
+    'B':  { scale:['B','C#','D#','E','F#','G#','A#'], chords:['B','C#m','D#m','E','F#','G#m','A#dim'] },
+    'Db': { scale:['Db','Eb','F','Gb','Ab','Bb','C'], chords:['D♭','E♭m','Fm','G♭','A♭','B♭m','Cdim'] },
+    'Eb': { scale:['Eb','F','G','Ab','Bb','C','D'],   chords:['E♭','Fm','Gm','A♭','B♭','Cm','Ddim'] },
+    'Gb': { scale:['Gb','Ab','Bb','Cb','Db','Eb','F'],chords:['G♭','A♭m','B♭m','C♭','D♭','E♭m','Fdim'] },
+    'Ab': { scale:['Ab','Bb','C','Db','Eb','F','G'],  chords:['A♭','B♭m','Cm','D♭','E♭','Fm','Gdim'] },
+    'Bb': { scale:['Bb','C','D','Eb','F','G','A'],    chords:['B♭','Cm','Dm','E♭','F','Gm','Adim'] },
+  },
+  minor: {
+    'C':  { scale:['C','D','Eb','F','G','Ab','Bb'],   chords:['Cm','Ddim','E♭','Fm','Gm','A♭','B♭'] },
+    'D':  { scale:['D','E','F','G','A','Bb','C'],     chords:['Dm','Edim','F','Gm','Am','B♭','C'] },
+    'E':  { scale:['E','F#','G','A','B','C','D'],     chords:['Em','F#dim','G','Am','Bm','C','D'] },
+    'F':  { scale:['F','G','Ab','Bb','C','Db','Eb'],  chords:['Fm','Gdim','A♭','B♭m','Cm','D♭','E♭'] },
+    'G':  { scale:['G','A','Bb','C','D','Eb','F'],    chords:['Gm','Adim','B♭','Cm','Dm','E♭','F'] },
+    'A':  { scale:['A','B','C','D','E','F','G'],      chords:['Am','Bdim','C','Dm','Em','F','G'] },
+    'B':  { scale:['B','C#','D','E','F#','G','A'],    chords:['Bm','C#dim','D','Em','F#m','G','A'] },
+    'Db': { scale:['Db','Eb','Fb','Gb','Ab','Bbb','Cb'], chords:['D♭m','E♭dim','F♭','G♭m','A♭m','B♭♭','C♭'] },
+    'Eb': { scale:['Eb','F','Gb','Ab','Bb','Cb','Db'],chords:['E♭m','Fdim','G♭','A♭m','B♭m','C♭','D♭'] },
+    'Gb': { scale:['Gb','Ab','Bbb','Cb','Db','Ebb','Fb'],chords:['G♭m','A♭dim','B♭♭','C♭m','D♭m','E♭♭','F♭'] },
+    'Ab': { scale:['Ab','Bb','Cb','Db','Eb','Fb','Gb'],chords:['A♭m','B♭dim','C♭','D♭m','E♭m','F♭','G♭'] },
+    'Bb': { scale:['Bb','C','Db','Eb','F','Gb','Ab'], chords:['B♭m','Cdim','D♭','E♭m','Fm','G♭','A♭'] },
+  }
+};
+
+const MAJOR_NUMERALS = ['I','ii','iii','IV','V','vi','vii°'];
+const MINOR_NUMERALS = ['i','ii°','III','iv','v','VI','VII'];
+const CHORD_TYPES_MAJOR = ['maj','min','min','maj','maj','min','dim'];
+const CHORD_TYPES_MINOR = ['min','dim','maj','min','min','maj','maj'];
+
+// Common progressions
+const PROGRESSIONS = {
+  major: {
+    progs: [
+      { name:'I – V – vi – IV', indices:[0,4,5,3], desc:'The most popular pop progression (e.g., Let It Be, No Woman No Cry).' },
+      { name:'I – IV – V',      indices:[0,3,4],   desc:'The classic 3-chord progression — foundation of rock and blues.' },
+      { name:'ii – V – I',      indices:[1,4,0],   desc:'The jazz standard turnaround. Smooth and satisfying resolution.' },
+      { name:'I – vi – IV – V', indices:[0,5,3,4], desc:'The 50s doo-wop progression — feel-good and timeless.' },
+    ]
+  },
+  minor: {
+    progs: [
+      { name:'i – VI – III – VII', indices:[0,5,2,6], desc:'The most emotional minor progression. Used in countless ballads.' },
+      { name:'i – iv – v',          indices:[0,3,4],   desc:'Classic natural minor — melancholic and grounded.' },
+      { name:'i – VI – VII',        indices:[0,5,6],   desc:'Anthemic minor feel — great for builds and choruses.' },
+      { name:'i – VII – VI – VII',  indices:[0,6,5,6], desc:'Andalusian-flavored descending progression — mysterious and flamenco-like.' },
+    ]
+  }
+};
+
+// ===== PIANO LAYOUT =====
+// We display 2 octaves: C3 to B4
+const WHITE_NOTES = ['C','D','E','F','G','A','B'];
+const BLACK_POSITIONS = { 'C#':0,'D#':1,'F#':3,'G#':4,'A#':5 }; // gaps after C,D,F,G,A
+const BLACK_OFFSETS = [38, 90, -1, 190, 242, 294, -1]; // px offset from start of each white key group
+
+function toChromatic(note) {
+  const clean = note.replace(/♭/g,'b');
+  if (CHROMATIC.includes(clean)) return CHROMATIC.indexOf(clean);
+  if (NOTE_ALIASES[clean] !== undefined) return CHROMATIC.indexOf(NOTE_ALIASES[clean]);
+  return -1;
+}
+
+function buildPiano() {
+  const container = document.getElementById('piano-keys');
+  container.innerHTML = '';
+  // 2 octaves: C3-B3, C4-B4
+  const octaves = [3,4];
+  const keys = [];
+  let whiteIdx = 0;
+  for (let oct of octaves) {
+    for (let i=0; i<7; i++) {
+      const note = WHITE_NOTES[i];
+      const fullNote = note + oct;
+      const wk = document.createElement('div');
+      wk.className = 'white-key';
+      wk.dataset.note = note;
+      wk.dataset.full = fullNote;
+      wk.dataset.chromatic = CHROMATIC.indexOf(note);
+      const lbl = document.createElement('span');
+      lbl.className = 'key-label';
+      lbl.textContent = note;
+      wk.appendChild(lbl);
+      wk.addEventListener('mousedown', () => pressKey(wk, true));
+      wk.addEventListener('mouseup', () => pressKey(wk, false));
+      wk.addEventListener('mouseleave', () => wk.classList.remove('pressed'));
+      container.appendChild(wk);
+      keys.push({ el:wk, note, oct, type:'white', idx:whiteIdx });
+      whiteIdx++;
+    }
+  }
+  // Black keys
+  const blackLayout = ['C#','D#',null,'F#','G#','A#',null];
+  // We need to position black keys absolutely over white keys
+  const whiteKeyW = 52;
+  const gap = 0;
+  for (let oct=0; oct<2; oct++) {
+    for (let i=0; i<7; i++) {
+      const bNote = blackLayout[i];
+      if (!bNote) continue;
+      const fullNote = bNote + (octaves[oct]);
+      const xPos = (oct * 7 + i) * whiteKeyW + whiteKeyW * 0.67;
+      const bk = document.createElement('div');
+      bk.className = 'black-key';
+      bk.dataset.note = bNote;
+      bk.dataset.full = fullNote;
+      bk.dataset.chromatic = CHROMATIC.indexOf(bNote);
+      bk.style.left = xPos + 'px';
+      bk.style.top = '0px';
+      const lbl = document.createElement('span');
+      lbl.className = 'key-label';
+      lbl.textContent = bNote.replace('#','♯');
+      bk.appendChild(lbl);
+      bk.addEventListener('mousedown', () => pressKey(bk, true));
+      bk.addEventListener('mouseup', () => pressKey(bk, false));
+      bk.addEventListener('mouseleave', () => bk.classList.remove('pressed'));
+      container.appendChild(bk);
+    }
+  }
+}
+
+function pressKey(el, down) {
+  if (down) el.classList.add('pressed');
+  else el.classList.remove('pressed');
+}
+
+// ===== STATE =====
+let activeChordIdx = null;
+
+function updatePiano() {
+  activeChordIdx = null;
+  const type = document.getElementById('type-select').value;
+  const key = document.getElementById('key-select').value;
+  const data = KEY_DATA[type][key];
+  if (!data) return;
+
+  const numerals = type === 'major' ? MAJOR_NUMERALS : MINOR_NUMERALS;
+  const chordTypes = type === 'major' ? CHORD_TYPES_MAJOR : CHORD_TYPES_MINOR;
+
+  // Highlight scale notes on piano
+  highlightScale(data.scale);
+
+  // Scale display
+  const sd = document.getElementById('scale-display');
+  sd.innerHTML = '';
+  data.scale.forEach((n,i) => {
+    const b = document.createElement('div');
+    b.className = 'note-badge' + (i===0?' root':'');
+    b.textContent = n.replace('b','♭').replace('#','♯');
+    sd.appendChild(b);
+  });
+
+  // Chords display
+  const cd = document.getElementById('chords-display');
+  cd.innerHTML = '';
+  data.chords.forEach((chord, i) => {
+    const item = document.createElement('div');
+    item.className = 'chord-item';
+    item.innerHTML = `
+      <span class="chord-numeral">${numerals[i]}</span>
+      <span class="chord-name">${chord}</span>
+      <span class="chord-type-badge badge-${chordTypes[i] === 'maj' ? 'maj' : chordTypes[i] === 'min' ? 'min' : 'dim'}">${chordTypes[i]}</span>
+    `;
+    item.addEventListener('click', () => highlightChord(i, data, type, item));
+    cd.appendChild(item);
+  });
+
+  // Common progressions
+  buildCommonChords(type, key, data);
+}
+
+function resolveNote(n) {
+  const clean = n.replace(/♭/g,'b').replace(/♯/g,'#');
+  if (CHROMATIC.includes(clean)) return CHROMATIC.indexOf(clean);
+  if (NOTE_ALIASES[clean] !== undefined) return CHROMATIC.indexOf(NOTE_ALIASES[clean]);
+  return -1;
+}
+
+function highlightScale(scaleNotes) {
+  clearHighlights();
+  const chromaticIndices = new Set(scaleNotes.map(n => {
+    const c = n.replace(/♭/g,'b').replace(/♯/g,'#').replace('Fb','E').replace('Cb','B').replace('Bbb','A#').replace('Ebb','D#');
+    if (CHROMATIC.includes(c)) return CHROMATIC.indexOf(c);
+    if (NOTE_ALIASES[c] !== undefined) return CHROMATIC.indexOf(NOTE_ALIASES[c]);
+    return -1;
+  }).filter(x => x >= 0));
+
+  document.querySelectorAll('.white-key,.black-key').forEach(k => {
+    const ci = parseInt(k.dataset.chromatic);
+    if (chromaticIndices.has(ci)) k.classList.add('highlighted');
+  });
+}
+
+function highlightChord(idx, data, type, itemEl) {
+  if (activeChordIdx === idx) {
+    activeChordIdx = null;
+    document.querySelectorAll('.chord-item').forEach(el => el.classList.remove('playing'));
+    highlightScale(data.scale);
+    return;
+  }
+  activeChordIdx = idx;
+  document.querySelectorAll('.chord-item').forEach(el => el.classList.remove('playing'));
+  itemEl.classList.add('playing');
+
+  // Get chord tones
+  const chordTones = getChordTones(idx, data.scale, type);
+  clearHighlights();
+
+  // Show scale as highlighted, chord as chord-hl
+  const scaleIndices = new Set(data.scale.map(n => resolveNote(n.replace(/♭/g,'b').replace('Fb','E').replace('Cb','B').replace('Bbb','A#').replace('Ebb','D#'))).filter(x=>x>=0));
+  const chordIndices = new Set(chordTones);
+
+  document.querySelectorAll('.white-key,.black-key').forEach(k => {
+    const ci = parseInt(k.dataset.chromatic);
+    if (chordIndices.has(ci)) k.classList.add('chord-hl');
+    else if (scaleIndices.has(ci)) k.classList.add('highlighted');
+  });
+}
+
+function getChordTones(idx, scale, type) {
+  // Build chord from scale degree
+  const rootNote = scale[idx];
+  const third = scale[(idx+2)%7];
+  const fifth = scale[(idx+4)%7];
+  return [rootNote, third, fifth].map(n => {
+    const c = n.replace(/♭/g,'b').replace('Fb','E').replace('Cb','B').replace('Bbb','A#').replace('Ebb','D#');
+    if (CHROMATIC.includes(c)) return CHROMATIC.indexOf(c);
+    if (NOTE_ALIASES[c] !== undefined) return CHROMATIC.indexOf(NOTE_ALIASES[c]);
+    return -1;
+  }).filter(x=>x>=0);
+}
+
+function clearHighlights() {
+  document.querySelectorAll('.highlighted,.chord-hl').forEach(k => {
+    k.classList.remove('highlighted','chord-hl');
+  });
+}
+
+function buildCommonChords(type, key, data) {
+  const cg = document.getElementById('common-grid');
+  const pd = document.getElementById('prog-desc');
+  cg.innerHTML = '';
+  pd.innerHTML = '';
+
+  const numerals = type === 'major' ? MAJOR_NUMERALS : MINOR_NUMERALS;
+  const progs = PROGRESSIONS[type].progs;
+
+  // Show 3-chord and 4-chord common combos
+  progs.forEach((prog, pi) => {
+    const btn = document.createElement('button');
+    btn.style.cssText = 'background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:10px 16px;cursor:pointer;color:var(--text);font-family:"DM Sans",sans-serif;font-size:0.85rem;transition:all 0.2s;text-align:center;';
+    btn.innerHTML = `<div style="font-size:0.65rem;color:var(--muted);margin-bottom:4px;">${prog.indices.length}-chord</div><div style="font-family:\'DM Mono\',monospace;font-size:0.9rem;">${prog.name}</div>`;
+    btn.addEventListener('mouseenter', () => { btn.style.borderColor='rgba(124,111,196,0.4)'; btn.style.transform='translateY(-2px)'; });
+    btn.addEventListener('mouseleave', () => { btn.style.borderColor=''; btn.style.transform=''; });
+    btn.addEventListener('click', () => {
+      pd.innerHTML = `<strong>${prog.name}</strong>: ${prog.desc}<br><br>Chords: ${prog.indices.map(i => '<strong>'+data.chords[i]+'</strong>').join(' → ')}`;
+      // Highlight these chord tones
+      clearHighlights();
+      const allTones = new Set();
+      prog.indices.forEach(ci => {
+        getChordTones(ci, data.scale, type).forEach(t => allTones.add(t));
+      });
+      const scaleIndices = new Set(data.scale.map(n => resolveNote(n.replace(/♭/g,'b').replace('Fb','E').replace('Cb','B').replace('Bbb','A#').replace('Ebb','D#'))).filter(x=>x>=0));
+      document.querySelectorAll('.white-key,.black-key').forEach(k => {
+        const ci = parseInt(k.dataset.chromatic);
+        if (allTones.has(ci)) k.classList.add('chord-hl');
+        else if (scaleIndices.has(ci)) k.classList.add('highlighted');
+      });
+      document.querySelectorAll('.chord-item').forEach(el => el.classList.remove('playing'));
+    });
+    cg.appendChild(btn);
+  });
+
+  // Also show individual common chords (I, IV, V for major or i, VI, VII for minor)
+  const commonIdx = type === 'major' ? [0,3,4,5] : [0,2,5,6]; // I,IV,V,vi or i,III,VI,VII
+  const commonDiv = document.createElement('div');
+  commonDiv.style.cssText = 'width:100%;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);';
+  commonDiv.innerHTML = `<div style="font-size:0.7rem;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">Most Common Chords</div>`;
+  const commonRow = document.createElement('div');
+  commonRow.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;';
+  commonIdx.forEach(ci => {
+    const b = document.createElement('div');
+    b.className = 'common-item';
+    b.innerHTML = `<div class="common-numeral">${numerals[ci]}</div><div class="common-name">${data.chords[ci]}</div>`;
+    b.addEventListener('click', () => {
+      const el = document.querySelectorAll('.chord-item')[ci];
+      if (el) el.click();
+    });
+    commonRow.appendChild(b);
+  });
+  commonDiv.appendChild(commonRow);
+  cg.appendChild(commonDiv);
+}
+
+// ===== THEORY TABLE BUILDER =====
+function buildTable(tableId, keys, type) {
+  const tbody = document.getElementById(tableId);
+  tbody.innerHTML = '';
+  keys.forEach(key => {
+    const data = KEY_DATA[type][key];
+    const tr = document.createElement('tr');
+    const chordHTML = data.chords.map(c => {
+      let cls = 'chord-pill major-chord';
+      if (c.includes('dim')) cls = 'chord-pill dim';
+      else if (c.includes('m') && !c.endsWith('M')) cls = 'chord-pill minor';
+      return `<span class="${cls}">${c}</span>`;
+    }).join('');
+    tr.innerHTML = `
+      <td><span class="key-name">${DISPLAY_NAMES[key]||key}</span></td>
+      <td><div class="scale-notes">${data.scale.map(n=>n.replace('b','♭').replace('#','♯')).join(' · ')}</div></td>
+      <td><div class="chord-list">${chordHTML}</div></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(t => {
+    if (t.textContent.toLowerCase() === name) t.classList.add('active');
+  });
+  if (name === 'piano') updatePiano();
+}
+
+// ===== INIT =====
+buildTable('major-natural-table', ['C','D','E','F','G','A','B'], 'major');
+buildTable('major-flat-table', ['Db','Eb','Gb','Ab','Bb'], 'major');
+buildTable('minor-natural-table', ['C','D','E','F','G','A','B'], 'minor');
+buildTable('minor-flat-table', ['Db','Eb','Gb','Ab','Bb'], 'minor');
+buildPiano();
+updatePiano();
+</script>
+</body>
+</html>
