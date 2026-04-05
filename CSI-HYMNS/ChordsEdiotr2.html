@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CSI Hymns Chord Editor</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=IM+Fell+English:ital@0;1&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#0d0f14;--surface:#13161e;--surface2:#1a1e2a;--border:#2a2f3f;
+  --accent:#c4922a;--accent2:#e8b84b;--text:#e8e2d5;--text-muted:#6b7285;
+  --chord-bg:#1e2535;--chord-active:#c4922a22;--chord-border:#c4922a88;
+  --red:#c45a2a;--radius:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'IM Fell English',serif;min-height:100vh;display:flex;flex-direction:column;}
+
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 18px;display:flex;align-items:center;gap:14px;height:54px;flex-shrink:0;position:sticky;top:0;z-index:100;}
+header h1{font-family:'Cinzel',serif;font-size:1rem;font-weight:700;color:var(--accent2);letter-spacing:.06em;white-space:nowrap;}
+header .sep{width:1px;height:26px;background:var(--border);}
+.toolbar{display:flex;align-items:center;gap:4px;flex-wrap:wrap;flex:1;}
+.tool-group{display:flex;align-items:center;gap:3px;padding:0 8px;border-right:1px solid var(--border);}
+.tool-group:last-child{border-right:none;}
+.btn{background:transparent;border:1px solid transparent;color:var(--text);padding:4px 9px;border-radius:var(--radius);cursor:pointer;font-size:.73rem;font-family:'JetBrains Mono',monospace;font-weight:600;transition:all .15s;white-space:nowrap;}
+.btn:hover{background:var(--surface2);border-color:var(--border);color:var(--accent2);}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#000;}
+.btn.primary:hover{background:var(--accent2);}
+.btn.danger{color:var(--red);}
+.btn.danger:hover{border-color:var(--red);}
+.btn.icon{padding:4px 7px;font-size:.88rem;}
+select.tool-select{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:4px 7px;border-radius:var(--radius);font-size:.73rem;font-family:'JetBrains Mono',monospace;cursor:pointer;outline:none;}
+
+.app-body{display:flex;flex:1;overflow:hidden;}
+
+.sidebar{width:270px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;}
+.sidebar-header{padding:12px 14px 9px;border-bottom:1px solid var(--border);font-family:'Cinzel',serif;font-size:.68rem;letter-spacing:.1em;color:var(--text-muted);display:flex;align-items:center;justify-content:space-between;}
+.hymn-list{flex:1;overflow-y:auto;padding:7px;}
+.hymn-item{padding:8px 11px;border-radius:var(--radius);cursor:pointer;transition:all .14s;border:1px solid transparent;margin-bottom:3px;}
+.hymn-item:hover{background:var(--surface2);border-color:var(--border);}
+.hymn-item.active{background:var(--chord-active);border-color:var(--chord-border);}
+.hymn-item .hymn-num{font-family:'Cinzel',serif;font-size:.64rem;color:var(--accent);margin-bottom:2px;}
+.hymn-item .hymn-title{font-size:.82rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.import-panel{padding:11px;border-top:1px solid var(--border);}
+.import-panel textarea{width:100%;height:80px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px;border-radius:var(--radius);font-size:.72rem;font-family:'JetBrains Mono',monospace;resize:vertical;outline:none;margin-bottom:6px;}
+.import-panel textarea:focus{border-color:var(--accent);}
+
+.editor-area{flex:1;overflow:hidden;display:flex;flex-direction:column;}
+.editor-meta{padding:9px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:11px;background:var(--surface);}
+.editor-meta input{background:transparent;border:none;color:var(--accent2);font-family:'Cinzel',serif;font-size:.95rem;outline:none;flex:1;}
+.editor-meta input::placeholder{color:var(--text-muted);}
+.key-badge{font-family:'JetBrains Mono',monospace;font-size:.68rem;padding:3px 9px;border-radius:20px;background:var(--chord-active);border:1px solid var(--chord-border);color:var(--accent2);white-space:nowrap;}
+.chord-palette{padding:7px 22px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+.palette-label{font-family:'Cinzel',serif;font-size:.62rem;letter-spacing:.1em;color:var(--text-muted);margin-right:3px;}
+.chord-chip{font-family:'JetBrains Mono',monospace;font-size:.69rem;font-weight:600;padding:3px 9px;border-radius:4px;background:var(--chord-bg);border:1px solid var(--border);color:var(--accent);cursor:pointer;transition:all .11s;user-select:none;}
+.chord-chip:hover{background:var(--chord-active);border-color:var(--chord-border);color:var(--accent2);}
+.editor-scroll{flex:1;overflow-y:auto;padding:28px 44px;}
+
+.hymn-sheet{max-width:820px;margin:0 auto;}
+.hymn-title-display{font-family:'Cinzel',serif;font-size:1.35rem;color:var(--accent2);margin-bottom:26px;text-align:center;letter-spacing:.08em;}
+.stanza{margin-bottom:30px;}
+.lyric-row{display:flex;flex-wrap:wrap;align-items:flex-end;gap:0 2px;margin-bottom:3px;line-height:1;}
+.syllable-unit{display:inline-flex;flex-direction:column;align-items:center;position:relative;cursor:pointer;}
+.syllable-unit:focus{outline:none;}
+.chord-slot{min-width:22px;min-height:21px;font-family:'JetBrains Mono',monospace;font-size:.69rem;font-weight:600;color:var(--accent2);text-align:center;border-radius:3px;padding:1px 3px;display:flex;align-items:center;justify-content:center;position:relative;white-space:nowrap;transition:background .12s;cursor:text;overflow:visible;}
+.chord-slot.has-chord{background:var(--chord-active);border:1px solid var(--chord-border);}
+.chord-slot.focused{background:#c4922a18;border:1px solid var(--accent);}
+.chord-input{position:absolute;top:-2px;left:50%;transform:translateX(-50%);min-width:46px;background:var(--bg);border:1.5px solid var(--accent);border-radius:4px;color:var(--accent2);font-family:'JetBrains Mono',monospace;font-size:.69rem;font-weight:600;text-align:center;outline:none;padding:2px 4px;z-index:50;box-shadow:0 4px 16px #0008;}
+.syl-text{font-size:1.15rem;color:var(--text);padding:0 1px;white-space:nowrap;line-height:1.6;transition:color .12s;}
+.syllable-unit:hover .syl-text{color:var(--accent2);}
+.syllable-unit.active-syl .syl-text{color:var(--accent2);}
+.word-gap{display:inline-block;width:13px;}
+
+.help-bar{padding:4px 22px;background:var(--surface);border-top:1px solid var(--border);display:flex;gap:16px;flex-wrap:wrap;font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--text-muted);}
+.help-bar span b{color:var(--accent);}
+
+.modal-overlay{position:fixed;inset:0;background:#000b;display:flex;align-items:center;justify-content:center;z-index:200;opacity:0;pointer-events:none;transition:opacity .2s;}
+.modal-overlay.open{opacity:1;pointer-events:all;}
+.modal{background:var(--surface2);border:1px solid var(--border);border-radius:12px;width:560px;max-width:96vw;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 24px 64px #0009;transform:translateY(14px);transition:transform .2s;}
+.modal-overlay.open .modal{transform:translateY(0);}
+.modal.wide{width:700px;}
+.modal-header{padding:15px 19px;border-bottom:1px solid var(--border);font-family:'Cinzel',serif;font-size:.88rem;color:var(--accent2);display:flex;justify-content:space-between;align-items:center;}
+.modal-body{padding:18px;overflow-y:auto;flex:1;}
+.modal-footer{padding:13px 19px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:7px;flex-wrap:wrap;align-items:center;}
+.export-preview{width:100%;height:260px;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:.73rem;padding:11px;border-radius:var(--radius);outline:none;resize:vertical;}
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);font-size:.83rem;}
+.setting-row:last-child{border-bottom:none;}
+
+/* ── EXPORT MODAL STYLES ── */
+.exp-section{margin-bottom:18px;}
+.exp-section-title{font-family:'Cinzel',serif;font-size:.65rem;letter-spacing:.1em;color:var(--text-muted);margin-bottom:8px;display:flex;align-items:center;gap:8px;}
+.exp-section-title::after{content:'';flex:1;height:1px;background:var(--border);}
+
+.hymn-select-list{display:flex;flex-direction:column;gap:4px;max-height:190px;overflow-y:auto;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:7px;}
+.hymn-select-item{display:flex;align-items:center;gap:9px;padding:6px 9px;border-radius:6px;border:1px solid transparent;cursor:pointer;transition:all .12s;user-select:none;}
+.hymn-select-item:hover{background:var(--surface2);border-color:var(--border);}
+.hymn-select-item.sel{background:var(--chord-active);border-color:var(--chord-border);}
+.hymn-select-item input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:pointer;flex-shrink:0;}
+.hymn-select-item .hsi-num{font-family:'Cinzel',serif;font-size:.63rem;color:var(--accent);min-width:40px;}
+.hymn-select-item .hsi-title{font-size:.82rem;color:var(--text);}
+.sel-btns{display:flex;gap:5px;margin-bottom:7px;}
+
+.size-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.size-row label{font-size:.74rem;color:var(--text-muted);min-width:140px;}
+.size-row input[type=range]{flex:1;accent-color:var(--accent);}
+.size-row .sv{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--accent2);min-width:28px;text-align:right;}
+
+.page-prev{background:#fff;border-radius:6px;padding:18px 24px;display:flex;flex-direction:column;align-items:center;gap:6px;border:1px solid #ddd;}
+.page-prev .pc{font-family:'Courier New',monospace;font-weight:700;color:#8B5E00;letter-spacing:3px;}
+.page-prev .pl{font-family:'Noto Sans Kannada','Arial Unicode MS',sans-serif;color:#111;}
+
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+@keyframes flash{0%,100%{opacity:1}50%{opacity:.4}}
+.transpose-flash{animation:flash .3s;}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:11px;color:var(--text-muted);}
+.empty-state .icon{font-size:2.8rem;opacity:.28;}
+.empty-state p{font-size:.83rem;text-align:center;max-width:240px;line-height:1.6;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>✝ CSI Hymns</h1>
+  <div class="sep"></div>
+  <div class="toolbar">
+    <div class="tool-group">
+      <button class="btn" onclick="openImportModal()">📥 Import JSON</button>
+      <button class="btn" onclick="newHymn()">＋ New Hymn</button>
+    </div>
+    <div class="tool-group">
+      <select class="tool-select" id="keySelect" onchange="setKey(this.value)">
+        <option value="C">Key: C</option><option value="C#">Key: C#</option>
+        <option value="D" selected>Key: D</option><option value="D#">Key: D#</option>
+        <option value="E">Key: E</option><option value="F">Key: F</option>
+        <option value="F#">Key: F#</option><option value="G">Key: G</option>
+        <option value="G#">Key: G#</option><option value="A">Key: A</option>
+        <option value="A#">Key: A#</option><option value="B">Key: B</option>
+      </select>
+      <button class="btn" onclick="transpose(-1)">♭ ↓</button>
+      <button class="btn" onclick="transpose(1)">♯ ↑</button>
+    </div>
+    <div class="tool-group">
+      <button class="btn" onclick="clearAllChords()">🗑 Clear Chords</button>
+      <button class="btn" onclick="openSettings()">⚙ Settings</button>
+    </div>
+    <div class="tool-group">
+      <button class="btn primary" onclick="openExportModal('pdf')">🖨 Export PDF</button>
+      <button class="btn primary" onclick="openExportModal('docx')">📄 Export DOCX</button>
+      <button class="btn" onclick="openExportText()">TXT</button>
+    </div>
+  </div>
+</header>
+
+<div class="app-body">
+  <div class="sidebar">
+    <div class="sidebar-header">
+      HYMN LIST
+      <button class="btn icon danger" onclick="deleteCurrentHymn()">🗑</button>
+    </div>
+    <div class="hymn-list" id="hymnList"></div>
+    <div class="import-panel">
+      <div style="font-family:'Cinzel',serif;font-size:.62rem;letter-spacing:.1em;color:var(--text-muted);margin-bottom:5px;">QUICK JSON PASTE</div>
+      <textarea id="quickJson" placeholder='{"number":1,"title":"Hymn","key":"D","lines":[["ಭೂ ಲೋ ಕ","ಕ ರ್ತ ನ ಗೆ"],[],["ಉ ತ್ಸಾ ಹ","ಎ ತ್ತ ಲಿ"]]}'></textarea>
+      <button class="btn primary" style="width:100%" onclick="importFromSidebar()">Import</button>
+    </div>
+  </div>
+
+  <div class="editor-area">
+    <div class="editor-meta">
+      <input type="text" id="hymnTitleInput" placeholder="Hymn Title…" oninput="updateCurrentTitle(this.value)"/>
+      <span class="key-badge" id="keyBadge">Key: D</span>
+      <input type="number" id="hymnNumInput" placeholder="#" style="width:52px;text-align:center;font-family:'Cinzel',serif;font-size:.82rem;background:transparent;border:none;color:var(--accent);outline:none;" oninput="updateCurrentNum(this.value)"/>
+    </div>
+    <div class="chord-palette">
+      <span class="palette-label">CHORDS →</span>
+      <div id="chordChips"></div>
+      <input type="text" id="customChordInput" placeholder="custom…"
+        style="background:var(--chord-bg);border:1px solid var(--border);color:var(--accent2);padding:2px 7px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:.69rem;width:74px;outline:none;"
+        onkeydown="if(event.key==='Enter')applyCustomChord(this.value)"/>
+    </div>
+    <div class="editor-scroll">
+      <div id="sheetContainer" class="hymn-sheet">
+        <div class="empty-state"><div class="icon">🎵</div><p>Import a hymn via the JSON panel or create a new one.</p></div>
+      </div>
+    </div>
+    <div class="help-bar">
+      <span><b>Click</b> syllable</span><span><b>Type</b> chord + <b>Enter</b></span>
+      <span><b>→/←</b> move</span><span><b>↑↓</b> line</span>
+      <span><b>Del</b> clear</span><span><b>Esc</b> exit</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ IMPORT MODAL ═══ -->
+<div class="modal-overlay" id="importModal">
+  <div class="modal">
+    <div class="modal-header">Import Hymn JSON <button class="btn icon" onclick="closeModal('importModal')">✕</button></div>
+    <div class="modal-body">
+      <p style="font-size:.75rem;color:var(--text-muted);margin-bottom:9px;">Format: <code style="color:var(--accent);font-size:.68rem">{"number":1,"title":"…","key":"D","lines":[["word group syllables"],…]}</code><br>Use <code style="color:var(--accent);font-size:.68rem">[]</code> for stanza breaks.</p>
+      <textarea class="export-preview" id="importJsonArea" placeholder='{"number":1,"title":"Hymns","key":"D","lines":[["ಭೂ ಲೋ ಕ ವೆ ಲ್ಲಾ","ಕ ರ್ತ ನ ಗೆ"],["ಉ ತ್ಸಾ ಹ ಧ್ವ ನಿ","ಎ ತ್ತ ಲಿ"],[],["ಸಂ ತೋ ಷ","ಹ ರ್ಷ ದೊ ಡ ನೆ"]]}'></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('importModal')">Cancel</button>
+      <button class="btn primary" onclick="doImport()">Import</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ EXPORT MODAL ═══ -->
+<div class="modal-overlay" id="exportModal">
+  <div class="modal wide">
+    <div class="modal-header">
+      <span id="exportModalTitle">Export</span>
+      <button class="btn icon" onclick="closeModal('exportModal')">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- ① Hymn Selection -->
+      <div class="exp-section">
+        <div class="exp-section-title">① SELECT HYMNS</div>
+        <div class="sel-btns">
+          <button class="btn" onclick="exportSelectAll()">✔ All</button>
+          <button class="btn" onclick="exportDeselectAll()">✕ None</button>
+          <button class="btn" onclick="exportSelectCurrent()">☛ Current Only</button>
+        </div>
+        <div class="hymn-select-list" id="exportHymnList"></div>
+      </div>
+
+      <!-- ② Font Sizes -->
+      <div class="exp-section">
+        <div class="exp-section-title">② FONT &amp; SPACING SIZE</div>
+        <div class="size-row">
+          <label>Lyric (Kannada) — pt</label>
+          <input type="range" min="14" max="64" value="28" id="expLyricSize" oninput="livePreview()"/>
+          <span class="sv" id="expLyricSizeVal">28</span>
+        </div>
+        <div class="size-row">
+          <label>Chord — pt</label>
+          <input type="range" min="10" max="52" value="20" id="expChordSize" oninput="livePreview()"/>
+          <span class="sv" id="expChordSizeVal">20</span>
+        </div>
+        <div class="size-row">
+          <label>Gap between lines — px</label>
+          <input type="range" min="6" max="60" value="22" id="expLineGap" oninput="livePreview()"/>
+          <span class="sv" id="expLineGapVal">22</span>
+        </div>
+      </div>
+
+      <!-- ③ Live Preview -->
+      <div class="exp-section">
+        <div class="exp-section-title">③ LIVE PREVIEW</div>
+        <div class="page-prev" id="expPreview">
+          <span class="pc" id="pcSample" style="font-size:20pt;">D &nbsp;&nbsp; G &nbsp;&nbsp; A</span>
+          <span class="pl" id="plSample" style="font-size:28pt;">ಭೂ ಲೋ ಕ ವೆ ಲ್ಲಾ</span>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <span style="font-size:.72rem;color:var(--text-muted);margin-right:auto;">Selected: <b id="selCount" style="color:var(--accent);">0</b> hymn(s)</span>
+      <button class="btn" onclick="closeModal('exportModal')">Cancel</button>
+      <button class="btn primary" id="exportDoBtn" onclick="doExport()">Export</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TXT MODAL ═══ -->
+<div class="modal-overlay" id="txtModal">
+  <div class="modal">
+    <div class="modal-header">Text Preview <button class="btn icon" onclick="closeModal('txtModal')">✕</button></div>
+    <div class="modal-body"><textarea class="export-preview" id="txtPreviewArea" readonly></textarea></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="navigator.clipboard.writeText(document.getElementById('txtPreviewArea').value)">📋 Copy</button>
+      <button class="btn primary" onclick="closeModal('txtModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SETTINGS MODAL ═══ -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <div class="modal-header">Settings <button class="btn icon" onclick="closeModal('settingsModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="setting-row">
+        <div>Editor — Kannada Font Size</div>
+        <div style="display:flex;align-items:center;gap:7px;">
+          <input type="range" min="12" max="30" value="19" id="fontSizeSlider" oninput="setFontSize(this.value)"/>
+          <span id="fontSizeVal" style="font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--accent2);min-width:20px;">19</span>
+        </div>
+      </div>
+      <div class="setting-row">
+        <div>Editor — Chord Font Size</div>
+        <div style="display:flex;align-items:center;gap:7px;">
+          <input type="range" min="9" max="20" value="11" id="chordFontSlider" oninput="setChordFont(this.value)"/>
+          <span id="chordFontVal" style="font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--accent2);min-width:20px;">11</span>
+        </div>
+      </div>
+      <div class="setting-row">
+        <div>Show empty chord boxes</div>
+        <input type="checkbox" id="showBoxesCheck" checked onchange="setShowBoxes(this.checked)" style="accent-color:var(--accent);width:16px;height:16px;"/>
+      </div>
+      <div class="setting-row">
+        <div>Chord palette set</div>
+        <select class="tool-select" onchange="setPaletteSet(this.value)">
+          <option value="standard">Standard</option>
+          <option value="minor">With minors</option>
+          <option value="extended">Extended</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn primary" onclick="closeModal('settingsModal')">Done</button></div>
+  </div>
+</div>
+
+<!-- Hidden iframe for PDF print -->
+<iframe id="printFrame" style="display:none;position:fixed;"></iframe>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════
+let hymns = [];
+let currentHymnIdx = -1;
+let showBoxes = true;
+let exportMode = 'pdf';
+
+const PALETTES = {
+  standard:['D','G','A','E','B','C','F'],
+  minor:   ['D','Dm','G','Gm','A','Am','E','Em','B','Bm','C','Cm','F','Fm'],
+  extended:['D','D7','Dsus4','G','G7','A','A7','Am','E','E7','Em','B','B7','C','Cmaj7','F','Fm']
+};
+let currentPalette = 'standard';
+const CHROMATIC = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+
+// ═══════════════════════════════════════════════════════
+//  HYMN MANAGEMENT
+// ═══════════════════════════════════════════════════════
+function newHymn(){
+  hymns.push({number:hymns.length+1,title:'New Hymn',key:'D',lines:[],chords:[]});
+  saveState(); renderHymnList(); openHymn(hymns.length-1);
+}
+function openHymn(idx){
+  currentHymnIdx=idx;
+  const h=hymns[idx];
+  document.getElementById('hymnTitleInput').value=h.title;
+  document.getElementById('hymnNumInput').value=h.number;
+  document.getElementById('keySelect').value=h.key||'D';
+  document.getElementById('keyBadge').textContent='Key: '+(h.key||'D');
+  renderSheet(); renderHymnList();
+}
+function updateCurrentTitle(v){ if(currentHymnIdx<0)return; hymns[currentHymnIdx].title=v; saveState(); renderHymnList(); }
+function updateCurrentNum(v){ if(currentHymnIdx<0)return; hymns[currentHymnIdx].number=parseInt(v)||hymns[currentHymnIdx].number; saveState(); renderHymnList(); }
+function setKey(v){ if(currentHymnIdx<0)return; hymns[currentHymnIdx].key=v; document.getElementById('keyBadge').textContent='Key: '+v; saveState(); }
+function deleteCurrentHymn(){
+  if(currentHymnIdx<0||!hymns.length)return;
+  if(!confirm('Delete this hymn?'))return;
+  hymns.splice(currentHymnIdx,1);
+  currentHymnIdx=Math.max(0,currentHymnIdx-1);
+  saveState(); renderHymnList();
+  if(hymns.length>0) openHymn(currentHymnIdx);
+  else document.getElementById('sheetContainer').innerHTML='<div class="empty-state"><div class="icon">🎵</div><p>No hymns. Import or create one.</p></div>';
+}
+
+// ═══════════════════════════════════════════════════════
+//  IMPORT
+// ═══════════════════════════════════════════════════════
+function parseHymnJSON(jsonStr){
+  const data=JSON.parse(jsonStr);
+  const lines=(data.lines||[]).map(line=>{
+    if(!line||line.length===0) return [];
+    if(typeof line==='string') return line.split(' ').filter(Boolean).map((s,i)=>({syl:s,wordBreak:i===0}));
+    let syls=[];
+    line.forEach((group,gi)=>{
+      String(group).split(' ').filter(Boolean).forEach((s,si)=>syls.push({syl:s,wordBreak:si===0&&gi>0}));
+    });
+    return syls;
+  });
+  return {number:data.number||1,title:data.title||'Untitled',key:data.key||'D',
+          lines,chords:lines.map(l=>l.map(()=>''))};
+}
+function openImportModal(){ openModal('importModal'); }
+function doImport(){
+  try{
+    const h=parseHymnJSON(document.getElementById('importJsonArea').value.trim());
+    hymns.push(h); saveState(); renderHymnList(); closeModal('importModal'); openHymn(hymns.length-1);
+  }catch(e){alert('Invalid JSON: '+e.message);}
+}
+function importFromSidebar(){
+  const txt=document.getElementById('quickJson').value.trim(); if(!txt)return;
+  try{
+    const h=parseHymnJSON(txt); hymns.push(h); saveState(); renderHymnList();
+    document.getElementById('quickJson').value=''; openHymn(hymns.length-1);
+  }catch(e){alert('Invalid JSON: '+e.message);}
+}
+
+// ═══════════════════════════════════════════════════════
+//  RENDER HYMN LIST
+// ═══════════════════════════════════════════════════════
+function renderHymnList(){
+  const el=document.getElementById('hymnList'); el.innerHTML='';
+  hymns.forEach((h,i)=>{
+    const d=document.createElement('div');
+    d.className='hymn-item'+(i===currentHymnIdx?' active':'');
+    d.innerHTML=`<div class="hymn-num">HYMN ${h.number}</div><div class="hymn-title">${h.title}</div>`;
+    d.onclick=()=>openHymn(i);
+    el.appendChild(d);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  RENDER SHEET
+// ═══════════════════════════════════════════════════════
+function renderSheet(){
+  if(currentHymnIdx<0)return;
+  const h=hymns[currentHymnIdx];
+  const container=document.getElementById('sheetContainer');
+  container.innerHTML='';
+  const te=document.createElement('div'); te.className='hymn-title-display'; te.textContent=h.title;
+  container.appendChild(te);
+  let stanza=document.createElement('div'); stanza.className='stanza';
+  h.lines.forEach((line,lineIdx)=>{
+    if(!line||line.length===0){
+      container.appendChild(stanza);
+      stanza=document.createElement('div'); stanza.className='stanza'; return;
+    }
+    const rowEl=document.createElement('div');
+    rowEl.className='lyric-row'; rowEl.dataset.line=lineIdx;
+    line.forEach((sylObj,sylIdx)=>{
+      const syl=typeof sylObj==='string'?sylObj:sylObj.syl;
+      const isBreak=typeof sylObj==='object'?sylObj.wordBreak:false;
+      if(isBreak){const g=document.createElement('span');g.className='word-gap';rowEl.appendChild(g);}
+      const unit=document.createElement('div');
+      unit.className='syllable-unit'; unit.tabIndex=0;
+      unit.dataset.line=lineIdx; unit.dataset.syl=sylIdx;
+      const slot=document.createElement('div');
+      const chord=(h.chords[lineIdx]&&h.chords[lineIdx][sylIdx])||'';
+      slot.className='chord-slot'+(chord?' has-chord':'');
+      slot.textContent=chord;
+      const st=document.createElement('div'); st.className='syl-text'; st.textContent=syl;
+      unit.appendChild(slot); unit.appendChild(st);
+      unit.addEventListener('click',()=>focusSyllable(lineIdx,sylIdx));
+      unit.addEventListener('keydown',e=>handleSylKeydown(e,lineIdx,sylIdx));
+      rowEl.appendChild(unit);
+    });
+    stanza.appendChild(rowEl);
+  });
+  container.appendChild(stanza);
+  buildChordPalette();
+}
+
+// ═══════════════════════════════════════════════════════
+//  FOCUS & CHORD ENTRY
+// ═══════════════════════════════════════════════════════
+let activeInput=null;
+function focusSyllable(li,si){
+  clearFocusUI();
+  const unit=getUnit(li,si); if(!unit)return;
+  unit.classList.add('active-syl');
+  const slot=unit.querySelector('.chord-slot');
+  slot.classList.add('focused');
+  const inp=document.createElement('input');
+  inp.type='text'; inp.className='chord-input';
+  inp.value=(hymns[currentHymnIdx].chords[li]&&hymns[currentHymnIdx].chords[li][si])||'';
+  inp.maxLength=12; slot.appendChild(inp); inp.focus(); inp.select();
+  activeInput={input:inp,lineIdx:li,sylIdx:si};
+  inp.addEventListener('input',()=>setChord(li,si,inp.value.toUpperCase()));
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='Enter'||e.key==='ArrowRight'||e.key==='Tab'){e.preventDefault();commitAndMove(li,si,inp.value,1);}
+    else if(e.key==='ArrowLeft'){e.preventDefault();commitAndMove(li,si,inp.value,-1);}
+    else if(e.key==='Escape'){e.preventDefault();commit(li,si,inp.value);clearFocusUI();}
+    else if(e.key==='ArrowUp'){e.preventDefault();commit(li,si,inp.value);moveLineDir(li,si,-1);}
+    else if(e.key==='ArrowDown'){e.preventDefault();commit(li,si,inp.value);moveLineDir(li,si,1);}
+    else if((e.key==='Delete'||e.key==='Backspace')&&inp.value===''){setChord(li,si,'');updateSlotUI(li,si);}
+  });
+  inp.addEventListener('blur',()=>setTimeout(()=>{if(activeInput&&activeInput.input===inp){commit(li,si,inp.value);clearFocusUI();}},130));
+}
+function commitAndMove(li,si,val,dir){commit(li,si,val);moveFocus(li,si,dir);}
+function commit(li,si,val){setChord(li,si,val.toUpperCase());updateSlotUI(li,si);}
+function clearFocusUI(){
+  document.querySelectorAll('.syllable-unit.active-syl').forEach(e=>e.classList.remove('active-syl'));
+  document.querySelectorAll('.chord-slot.focused').forEach(e=>e.classList.remove('focused'));
+  document.querySelectorAll('.chord-input').forEach(e=>e.remove());
+  activeInput=null;
+}
+function setChord(li,si,val){
+  if(currentHymnIdx<0)return;
+  const h=hymns[currentHymnIdx];
+  if(!h.chords[li])h.chords[li]=[];
+  h.chords[li][si]=val; saveState();
+}
+function updateSlotUI(li,si){
+  const unit=getUnit(li,si); if(!unit)return;
+  const slot=unit.querySelector('.chord-slot');
+  const inp=slot.querySelector('.chord-input'); if(inp)inp.remove();
+  const val=(hymns[currentHymnIdx].chords[li]&&hymns[currentHymnIdx].chords[li][si])||'';
+  slot.textContent=val; slot.classList.toggle('has-chord',val!=='');
+}
+function getUnit(li,si){return document.querySelector(`.syllable-unit[data-line="${li}"][data-syl="${si}"]`);}
+function moveFocus(li,si,dir){
+  const h=hymns[currentHymnIdx]; let l=li,s=si+dir;
+  while(l>=0&&l<h.lines.length){
+    const line=h.lines[l];
+    if(!line||!line.length){l+=dir;s=dir>0?0:(h.lines[l]?.length||1)-1;continue;}
+    if(s>=0&&s<line.length){focusSyllable(l,s);return;}
+    l+=dir; if(l<0||l>=h.lines.length)break;
+    s=dir>0?0:(h.lines[l]?.length||1)-1;
+  }
+}
+function moveLineDir(li,si,dir){
+  const h=hymns[currentHymnIdx];
+  for(let l=li+dir;l>=0&&l<h.lines.length;l+=dir){
+    if(h.lines[l]&&h.lines[l].length>0){focusSyllable(l,Math.min(si,h.lines[l].length-1));return;}
+  }
+}
+function handleSylKeydown(e,li,si){if(e.key==='Enter'||e.key===' '){e.preventDefault();focusSyllable(li,si);}}
+
+// ═══════════════════════════════════════════════════════
+//  PALETTE
+// ═══════════════════════════════════════════════════════
+function buildChordPalette(){
+  const chords=PALETTES[currentPalette];
+  const c=document.getElementById('chordChips'); c.innerHTML='';
+  chords.forEach(ch=>{
+    const chip=document.createElement('span');
+    chip.className='chord-chip'; chip.textContent=ch;
+    chip.onclick=()=>applyPaletteChord(ch);
+    c.appendChild(chip);
+  });
+}
+function applyPaletteChord(chord){
+  if(!activeInput)return;
+  const{lineIdx,sylIdx}=activeInput;
+  commit(lineIdx,sylIdx,chord); clearFocusUI(); moveFocus(lineIdx,sylIdx,1);
+}
+function applyCustomChord(chord){
+  if(!chord.trim())return; applyPaletteChord(chord.trim().toUpperCase());
+  document.getElementById('customChordInput').value='';
+}
+
+// ═══════════════════════════════════════════════════════
+//  CLEAR / TRANSPOSE
+// ═══════════════════════════════════════════════════════
+function clearAllChords(){
+  if(currentHymnIdx<0)return;
+  if(!confirm('Clear all chords for this hymn?'))return;
+  const h=hymns[currentHymnIdx];
+  h.chords=h.lines.map(l=>l?l.map(()=>''):[]);
+  saveState(); renderSheet();
+}
+function transposeChord(chord,steps){
+  const m=chord.match(/^([A-G][#b]?)(.*)$/); if(!m)return chord;
+  let root=m[1];
+  root=root.replace('Db','C#').replace('Eb','D#').replace('Fb','E').replace('Gb','F#').replace('Ab','G#').replace('Bb','A#').replace('Cb','B');
+  let idx=CHROMATIC.indexOf(root); if(idx<0)return chord;
+  return CHROMATIC[(idx+steps+12)%12]+m[2];
+}
+function transpose(steps){
+  if(currentHymnIdx<0)return;
+  const h=hymns[currentHymnIdx];
+  h.key=transposeChord(h.key||'D',steps);
+  document.getElementById('keySelect').value=h.key;
+  document.getElementById('keyBadge').textContent='Key: '+h.key;
+  h.chords=h.chords.map(line=>(line||[]).map(c=>c?transposeChord(c,steps):''));
+  saveState(); renderSheet();
+  const sc=document.getElementById('sheetContainer');
+  sc.classList.add('transpose-flash'); setTimeout(()=>sc.classList.remove('transpose-flash'),300);
+}
+
+// ═══════════════════════════════════════════════════════
+//  SETTINGS
+// ═══════════════════════════════════════════════════════
+function setFontSize(v){document.querySelectorAll('.syl-text').forEach(e=>e.style.fontSize=v+'px');document.getElementById('fontSizeVal').textContent=v;}
+function setChordFont(v){document.querySelectorAll('.chord-slot').forEach(e=>e.style.fontSize=v+'px');document.getElementById('chordFontVal').textContent=v;}
+function setShowBoxes(v){showBoxes=v;document.querySelectorAll('.chord-slot:not(.has-chord)').forEach(e=>e.style.border=v?'':'none');}
+function setPaletteSet(v){currentPalette=v;buildChordPalette();}
+function openSettings(){openModal('settingsModal');}
+
+// ═══════════════════════════════════════════════════════
+//  EXPORT MODAL
+// ═══════════════════════════════════════════════════════
+function openExportModal(mode){
+  exportMode=mode;
+  document.getElementById('exportModalTitle').textContent=mode==='pdf'?'🖨 Export PDF':'📄 Export DOCX';
+  document.getElementById('exportDoBtn').textContent=mode==='pdf'?'🖨 Print / Save PDF':'📄 Download DOCX';
+
+  const list=document.getElementById('exportHymnList'); list.innerHTML='';
+  hymns.forEach((h,i)=>{
+    const row=document.createElement('div');
+    row.className='hymn-select-item'+(i===currentHymnIdx?' sel':'');
+    row.dataset.idx=i;
+    const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=(i===currentHymnIdx);
+    cb.addEventListener('change',()=>{row.classList.toggle('sel',cb.checked); updateSelCount();});
+    const num=document.createElement('span'); num.className='hsi-num'; num.textContent='#'+h.number;
+    const title=document.createElement('span'); title.className='hsi-title'; title.textContent=h.title;
+    row.appendChild(cb); row.appendChild(num); row.appendChild(title);
+    row.addEventListener('click',e=>{if(e.target!==cb){cb.checked=!cb.checked;row.classList.toggle('sel',cb.checked);updateSelCount();}});
+    list.appendChild(row);
+  });
+
+  livePreview(); updateSelCount();
+  openModal('exportModal');
+}
+
+function updateSelCount(){
+  const n=document.querySelectorAll('#exportHymnList .hymn-select-item input:checked').length;
+  document.getElementById('selCount').textContent=n;
+}
+function exportSelectAll(){
+  document.querySelectorAll('#exportHymnList .hymn-select-item').forEach(r=>{
+    r.querySelector('input').checked=true; r.classList.add('sel');
+  }); updateSelCount();
+}
+function exportDeselectAll(){
+  document.querySelectorAll('#exportHymnList .hymn-select-item').forEach(r=>{
+    r.querySelector('input').checked=false; r.classList.remove('sel');
+  }); updateSelCount();
+}
+function exportSelectCurrent(){
+  exportDeselectAll();
+  const rows=document.querySelectorAll('#exportHymnList .hymn-select-item');
+  if(currentHymnIdx>=0&&rows[currentHymnIdx]){
+    rows[currentHymnIdx].querySelector('input').checked=true;
+    rows[currentHymnIdx].classList.add('sel');
+  }
+  updateSelCount();
+}
+function getSelectedIndices(){
+  const sel=[];
+  document.querySelectorAll('#exportHymnList .hymn-select-item').forEach(r=>{
+    if(r.querySelector('input').checked) sel.push(parseInt(r.dataset.idx));
+  });
+  return sel;
+}
+function livePreview(){
+  const ls=parseInt(document.getElementById('expLyricSize').value);
+  const cs=parseInt(document.getElementById('expChordSize').value);
+  const lg=parseInt(document.getElementById('expLineGap').value);
+  document.getElementById('expLyricSizeVal').textContent=ls;
+  document.getElementById('expChordSizeVal').textContent=cs;
+  document.getElementById('expLineGapVal').textContent=lg;
+  const box=document.getElementById('expPreview');
+  box.style.gap=lg+'px';
+  document.getElementById('pcSample').style.fontSize=cs+'pt';
+  document.getElementById('plSample').style.fontSize=ls+'pt';
+
+  if(currentHymnIdx>=0){
+    const h=hymns[currentHymnIdx];
+    const firstLineIdx=h.lines.findIndex(l=>l&&l.length>0);
+    if(firstLineIdx>=0){
+      const firstLine=h.lines[firstLineIdx];
+      const chords=firstLine.slice(0,5).map((_,si)=>(h.chords[firstLineIdx]&&h.chords[firstLineIdx][si])||'').filter(Boolean);
+      const lyric=firstLine.slice(0,5).map(s=>typeof s==='string'?s:s.syl).join(' ');
+      document.getElementById('pcSample').textContent=chords.join('  ')||'D   G   A';
+      document.getElementById('plSample').textContent=lyric||'ಭೂ ಲೋ ಕ ವೆ ಲ್ಲಾ';
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  EXPORT DISPATCH
+// ═══════════════════════════════════════════════════════
+function doExport(){
+  const indices=getSelectedIndices();
+  if(!indices.length){alert('Select at least one hymn.');return;}
+  const lyricSize=parseInt(document.getElementById('expLyricSize').value);
+  const chordSize=parseInt(document.getElementById('expChordSize').value);
+  const lineGap=parseInt(document.getElementById('expLineGap').value);
+  closeModal('exportModal');
+  if(exportMode==='pdf') doExportPDF(indices,lyricSize,chordSize,lineGap);
+  else doExportDOCX(indices,lyricSize,chordSize,lineGap);
+}
+
+// ═══════════════════════════════════════════════════════
+//  BUILD CLEAN HYMN HTML — NO BOXES, FULLY CENTERED
+// ═══════════════════════════════════════════════════════
+function buildHymnExportHTML(h,lyricSize,chordSize,lineGap){
+  const titleSize=Math.round(lyricSize*0.78);
+  // outer wrapper: full-width, centered column
+  let html=`<div style="width:100%;display:flex;flex-direction:column;align-items:center;padding:${lineGap}px 0;">`;
+
+  // Title block
+  html+=`<div style="text-align:center;margin-bottom:${lineGap*2}px;">`;
+  html+=`<span style="font-family:'Cinzel','Georgia',serif;font-size:${titleSize}pt;font-weight:700;color:#7A4E00;letter-spacing:0.06em;">${h.number}. ${h.title}</span>`;
+  html+=`<span style="font-family:'Courier New',monospace;font-size:${Math.round(titleSize*0.65)}pt;color:#9A6E30;margin-left:10px;">(Key: ${h.key||'D'})</span>`;
+  html+=`</div>`;
+
+  h.lines.forEach((line,lineIdx)=>{
+    if(!line||!line.length){
+      // stanza break
+      html+=`<div style="height:${Math.round(lineGap*1.6)}px;"></div>`;
+      return;
+    }
+
+    // One lyric row = chord row stacked above lyric row, both centered
+    html+=`<div style="display:flex;flex-direction:column;align-items:center;margin-bottom:${lineGap}px;width:100%;">`;
+
+    // ── chord row ──
+    html+=`<div style="display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-end;gap:0 ${Math.round(lyricSize*0.15)}px;">`;
+    line.forEach((sylObj,sylIdx)=>{
+      const isBreak=typeof sylObj==='object'?sylObj.wordBreak:false;
+      const chord=(h.chords[lineIdx]&&h.chords[lineIdx][sylIdx])||'';
+      const syl=typeof sylObj==='string'?sylObj:sylObj.syl;
+      const colW=Math.max(syl.length*lyricSize*0.6, chord.length*chordSize*0.65, lyricSize*0.9);
+      if(isBreak) html+=`<div style="width:${Math.round(lyricSize*0.55)}px;"></div>`;
+      html+=`<div style="min-width:${colW}px;text-align:center;font-family:'Courier New',Courier,monospace;font-size:${chordSize}pt;font-weight:700;color:#8B4500;line-height:1.3;white-space:nowrap;">${chord}</div>`;
+    });
+    html+=`</div>`;
+
+    // ── lyric row ──
+    html+=`<div style="display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-start;gap:0 ${Math.round(lyricSize*0.15)}px;">`;
+    line.forEach((sylObj,sylIdx)=>{
+      const isBreak=typeof sylObj==='object'?sylObj.wordBreak:false;
+      const syl=typeof sylObj==='string'?sylObj:sylObj.syl;
+      const chord=(h.chords[lineIdx]&&h.chords[lineIdx][sylIdx])||'';
+      const colW=Math.max(syl.length*lyricSize*0.6, chord.length*chordSize*0.65, lyricSize*0.9);
+      if(isBreak) html+=`<div style="width:${Math.round(lyricSize*0.55)}px;"></div>`;
+      html+=`<div style="min-width:${colW}px;text-align:center;font-family:'Noto Sans Kannada','Noto Sans','Arial Unicode MS',sans-serif;font-size:${lyricSize}pt;color:#111111;line-height:1.3;white-space:nowrap;">${syl}</div>`;
+    });
+    html+=`</div>`;
+
+    html+=`</div>`; // end row wrapper
+  });
+
+  html+=`</div>`; // end hymn wrapper
+  return html;
+}
+
+// ═══════════════════════════════════════════════════════
+//  PDF via print iframe
+// ═══════════════════════════════════════════════════════
+function doExportPDF(indices,lyricSize,chordSize,lineGap){
+  let body='';
+  indices.forEach((idx,i)=>{
+    const pageBreak=i>0?'page-break-before:always;':'';
+    body+=`<div style="${pageBreak}display:flex;flex-direction:column;align-items:center;padding:6mm 0;width:100%;">${buildHymnExportHTML(hymns[idx],lyricSize,chordSize,lineGap)}</div>`;
+  });
+
+  const doc=`<!DOCTYPE html><html><head><meta charset="UTF-8"/>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Noto+Sans+Kannada:wght@400;700&display=swap" rel="stylesheet"/>
+<style>
+  @page{margin:14mm 18mm;}
+  *{box-sizing:border-box;}
+  body{margin:0;padding:0;background:#fff;font-family:sans-serif;}
+  @media print{.noprint{display:none;}}
+<\/style>
+<\/head><body>${body}<\/body><\/html>`;
+
+  const frame=document.getElementById('printFrame');
+  frame.onload=function(){
+    try{
+      // Wait for Google Fonts to load before printing
+      setTimeout(()=>{frame.contentWindow.focus();frame.contentWindow.print();},900);
+    }catch(e){console.error(e);}
+  };
+  frame.srcdoc=doc;
+}
+
+// ═══════════════════════════════════════════════════════
+//  DOCX via docx.js CDN
+// ═══════════════════════════════════════════════════════
+async function doExportDOCX(indices,lyricSize,chordSize,lineGap){
+  if(!window.docx){
+    await new Promise((res,rej)=>{
+      const s=document.createElement('script');
+      s.src='https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.min.js';
+      s.onload=res; s.onerror=rej; document.head.appendChild(s);
+    });
+  }
+  const {Document,Paragraph,TextRun,Packer,AlignmentType,PageBreak,Table,TableRow,TableCell,WidthType,VerticalAlign}=window.docx;
+
+  // docx size unit = half-point (1pt = 2 units)
+  const lyrHp  = lyricSize * 2;
+  const chordHp = chordSize * 2;
+  const titleHp = Math.round(lyricSize * 0.78) * 2;
+  const spacingAfter = lineGap * 14; // twips (roughly)
+
+  const children=[];
+
+  indices.forEach((idx,hi)=>{
+    const h=hymns[idx];
+    if(hi>0) children.push(new Paragraph({children:[new PageBreak()]}));
+
+    // ── Centered title ──
+    children.push(new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing:{after: Math.round(spacingAfter*1.8), before: 200},
+      children:[
+        new TextRun({text:`${h.number}. ${h.title}`, font:'Georgia', size:titleHp, color:'7A4E00', bold:true}),
+        new TextRun({text:`  (Key: ${h.key||'D'})`, font:'Courier New', size:Math.round(titleHp*0.65), color:'9A6E30'})
+      ]
+    }));
+
+    h.lines.forEach((line,lineIdx)=>{
+      if(!line||!line.length){
+        // Stanza gap
+        children.push(new Paragraph({text:'', spacing:{after: spacingAfter}}));
+        return;
+      }
+
+      // Build text strings for chord row and lyric row
+      // Use a fixed-width approach: pad each cell the same width
+      // colWidth = chars wide enough for widest of chord or syllable
+      let chordParts=[], lyricParts=[];
+      line.forEach((sylObj,sylIdx)=>{
+        const syl  = typeof sylObj==='string'?sylObj:sylObj.syl;
+        const isBreak = typeof sylObj==='object'?sylObj.wordBreak:false;
+        const chord = (h.chords[lineIdx]&&h.chords[lineIdx][sylIdx])||'';
+        // For Kannada, each Unicode cluster ≈ wide, use fixed padding
+        const pad = Math.max(chord.length, syl.length, 3) + 2;
+        if(isBreak){chordParts.push('  '); lyricParts.push('  ');}
+        chordParts.push(chord.padEnd(pad,' '));
+        lyricParts.push(syl.padEnd(pad,' '));
+      });
+
+      // Chord line — bold, amber, monospace, centered
+      children.push(new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing:{before: spacingAfter, after: 0},
+        children:[new TextRun({
+          text: chordParts.join('').trimEnd()||' ',
+          font:'Courier New', size:chordHp, color:'8B4500', bold:true
+        })]
+      }));
+      // Lyric line — Kannada font, centered
+      children.push(new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing:{before:0, after: Math.round(spacingAfter*0.4)},
+        children:[new TextRun({
+          text: lyricParts.join('').trimEnd()||' ',
+          font:'Noto Sans Kannada', size:lyrHp, color:'111111'
+        })]
+      }));
+    });
+  });
+
+  const doc=new Document({sections:[{children}]});
+  const blob=await Packer.toBlob(doc);
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  const names=indices.map(i=>'Hymn'+hymns[i].number).join('_');
+  a.download=`CSI_${names}.docx`;
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),2000);
+}
+
+// ═══════════════════════════════════════════════════════
+//  TXT PREVIEW
+// ═══════════════════════════════════════════════════════
+function openExportText(){
+  if(currentHymnIdx<0)return;
+  const h=hymns[currentHymnIdx];
+  let out=`${h.number}. ${h.title}  (Key: ${h.key})\n\n`;
+  h.lines.forEach((line,li)=>{
+    if(!line||!line.length){out+='\n';return;}
+    let cr='',lr='';
+    line.forEach((sylObj,si)=>{
+      const syl=typeof sylObj==='string'?sylObj:sylObj.syl;
+      const isBreak=typeof sylObj==='object'?sylObj.wordBreak:false;
+      const chord=(h.chords[li]&&h.chords[li][si])||'';
+      if(isBreak){cr+='  ';lr+='  ';}
+      const w=Math.max(syl.length,chord.length)+1;
+      cr+=chord.padEnd(w); lr+=syl.padEnd(w);
+    });
+    out+=cr.trimEnd()+'\n'+lr.trimEnd()+'\n';
+  });
+  document.getElementById('txtPreviewArea').value=out;
+  openModal('txtModal');
+}
+
+// ═══════════════════════════════════════════════════════
+//  MODALS
+// ═══════════════════════════════════════════════════════
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.modal-overlay').forEach(o=>{
+  o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');});
+});
+
+// ═══════════════════════════════════════════════════════
+//  PERSIST (localStorage)
+// ═══════════════════════════════════════════════════════
+function saveState(){try{localStorage.setItem('csiHymns',JSON.stringify(hymns));}catch(e){}}
+function loadState(){
+  try{
+    const d=localStorage.getItem('csiHymns');
+    if(d){hymns=JSON.parse(d);renderHymnList();if(hymns.length>0)openHymn(0);}
+  }catch(e){hymns=[];}
+}
+
+// ═══════════════════════════════════════════════════════
+//  INIT + DEMO
+// ═══════════════════════════════════════════════════════
+loadState();
+buildChordPalette();
+
+if(hymns.length===0){
+  const mk=(syl,wb)=>({syl,wordBreak:wb});
+  const demo={
+    number:1, title:'Hymns', key:'D',
+    lines:[
+      [mk('ಭೂ',false),mk('ಲೋ',false),mk('ಕ',false),mk('ವೆ',false),mk('ಲ್ಲಾ',false),mk('ಕ',true),mk('ರ್ತ',false),mk('ನ',false),mk('ಗೆ',false)],
+      [mk('ಉ',false),mk('ತ್ಸಾ',false),mk('ಹ',false),mk('ಧ್ವ',false),mk('ನಿ',false),mk('ಎ',true),mk('ತ್ತ',false),mk('ಲಿ',false)],
+      [],
+      [mk('ಸಂ',false),mk('ತೋ',false),mk('ಷ',false),mk('ಹ',true),mk('ರ್ಷ',false),mk('ದೊ',false),mk('ಡ',false),mk('ನೆ',false)],
+      [mk('ಸ್ತೋ',false),mk('ತ್ರ',false),mk('ದಿ',false),mk('ಸೇ',true),mk('ವೆ',false),mk('ಮಾ',false),mk('ಡ',false),mk('ಲಿ',false)]
+    ],
+    chords:[]
+  };
+  demo.chords=demo.lines.map(l=>l?l.map(()=>''):[]);
+  demo.chords[0][0]='D'; demo.chords[0][1]='D'; demo.chords[0][2]='G';
+  demo.chords[0][4]='D'; demo.chords[0][5]='A'; demo.chords[0][8]='D';
+  hymns.push(demo); saveState(); renderHymnList(); openHymn(0);
+}
+</script>
+</body>
+</html>
