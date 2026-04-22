@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NoteQuest — Master Music Theory</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a12;
+    --surface: #12121e;
+    --surface2: #1a1a2e;
+    --border: #2a2a44;
+    --accent: #7c3aed;
+    --accent2: #06b6d4;
+    --accent3: #f59e0b;
+    --accent4: #10b981;
+    --danger: #ef4444;
+    --text: #f0f0ff;
+    --muted: #6b7280;
+    --staff-line: #2e2e50;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(ellipse at 20% 50%, rgba(124,58,237,0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(6,182,212,0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 60% 80%, rgba(245,158,11,0.05) 0%, transparent 40%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app { position: relative; z-index: 1; }
+
+  nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 32px;
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+    background: rgba(10,10,18,0.8);
+    position: sticky; top: 0; z-index: 100;
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.4rem;
+    letter-spacing: -0.02em;
+  }
+  .logo span { color: var(--accent2); }
+
+  .nav-stats { display: flex; gap: 12px; flex-wrap: wrap; }
+
+  .stat-pill {
+    display: flex; align-items: center; gap: 7px;
+    padding: 7px 14px;
+    border-radius: 100px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.82rem;
+    font-weight: 500;
+  }
+  .stat-pill.xp { color: var(--accent3); }
+  .stat-pill.streak { color: #f97316; }
+  .stat-pill.lives { color: var(--danger); }
+
+  main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  .screen { display: none; animation: fadeUp 0.4s ease; }
+  .screen.active { display: block; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* HOME */
+  .home-hero { text-align: center; padding: 60px 0 40px; }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 16px; border-radius: 100px;
+    background: rgba(124,58,237,0.15); border: 1px solid rgba(124,58,237,0.3);
+    font-size: 0.78rem; color: #a78bfa; font-family: 'DM Mono', monospace;
+    letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 24px;
+  }
+  .hero-title {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2.8rem, 7vw, 5rem);
+    font-weight: 800; line-height: 1.05; letter-spacing: -0.03em; margin-bottom: 16px;
+  }
+  .hero-title .highlight {
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .hero-sub { color: var(--muted); font-size: 1.05rem; line-height: 1.6; max-width: 480px; margin: 0 auto 40px; }
+
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 16px 36px; background: var(--accent); color: white;
+    border: none; border-radius: 16px; font-family: 'Syne', sans-serif;
+    font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.2s;
+    box-shadow: 0 0 40px rgba(124,58,237,0.4);
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 60px rgba(124,58,237,0.6); }
+
+  .section-label {
+    font-family: 'DM Mono', monospace; font-size: 0.75rem; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 20px; margin-top: 56px;
+  }
+
+  .mode-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+
+  .mode-card {
+    position: relative; padding: 28px 24px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 20px; cursor: pointer;
+    transition: all 0.25s; overflow: hidden;
+  }
+  .mode-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0;
+    height: 3px; border-radius: 20px 20px 0 0; opacity: 0; transition: opacity 0.25s;
+  }
+  .mode-card:hover { transform: translateY(-4px); }
+  .mode-card:hover::before { opacity: 1; }
+  .mode-card[data-color="purple"]::before { background: var(--accent); }
+  .mode-card[data-color="cyan"]::before   { background: var(--accent2); }
+  .mode-card[data-color="amber"]::before  { background: var(--accent3); }
+  .mode-card[data-color="green"]::before  { background: var(--accent4); }
+  .mode-card[data-color="purple"]:hover { border-color: var(--accent); box-shadow: 0 8px 32px rgba(124,58,237,0.2); }
+  .mode-card[data-color="cyan"]:hover   { border-color: var(--accent2); box-shadow: 0 8px 32px rgba(6,182,212,0.2); }
+  .mode-card[data-color="amber"]:hover  { border-color: var(--accent3); box-shadow: 0 8px 32px rgba(245,158,11,0.2); }
+  .mode-card[data-color="green"]:hover  { border-color: var(--accent4); box-shadow: 0 8px 32px rgba(16,185,129,0.2); }
+  .mode-icon { font-size: 2.2rem; margin-bottom: 16px; display: block; }
+  .mode-title { font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; }
+  .mode-desc { font-size: 0.85rem; color: var(--muted); line-height: 1.5; }
+  .mode-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+  .mode-level {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 100px;
+    font-family: 'DM Mono', monospace; font-size: 0.7rem; font-weight: 500;
+  }
+  .mode-count {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 100px;
+    font-family: 'DM Mono', monospace; font-size: 0.7rem; font-weight: 500;
+    background: rgba(255,255,255,0.06); color: var(--muted);
+  }
+  .mode-card[data-color="purple"] .mode-level { background: rgba(124,58,237,0.15); color: #a78bfa; }
+  .mode-card[data-color="cyan"] .mode-level   { background: rgba(6,182,212,0.15);  color: #67e8f9; }
+  .mode-card[data-color="amber"] .mode-level  { background: rgba(245,158,11,0.15); color: #fcd34d; }
+  .mode-card[data-color="green"] .mode-level  { background: rgba(16,185,129,0.15); color: #6ee7b7; }
+  .mode-locked { opacity: 0.45; pointer-events: none; }
+
+  /* GAME */
+  .game-header { display: flex; align-items: center; gap: 16px; margin-bottom: 32px; }
+  .btn-back {
+    display: flex; align-items: center; gap: 6px; padding: 9px 16px;
+    border: 1px solid var(--border); border-radius: 12px; background: var(--surface);
+    color: var(--muted); cursor: pointer; font-size: 0.85rem; transition: all 0.2s;
+  }
+  .btn-back:hover { border-color: var(--text); color: var(--text); }
+  .progress-bar-wrap { flex: 1; height: 8px; background: var(--surface2); border-radius: 100px; overflow: hidden; }
+  .progress-bar {
+    height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 100px; transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+  }
+  .q-counter { font-family: 'DM Mono', monospace; font-size: 0.82rem; color: var(--muted); white-space: nowrap; }
+
+  .staff-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 24px; padding: 40px 32px 32px;
+    text-align: center; margin-bottom: 28px; position: relative; overflow: hidden;
+  }
+  .staff-card::after {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(124,58,237,0.06) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .question-label {
+    font-family: 'DM Mono', monospace; font-size: 0.75rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 24px;
+  }
+  canvas#staffCanvas { display: block; margin: 0 auto 16px; border-radius: 12px; }
+  .hint-text { font-size: 0.82rem; color: var(--muted); font-style: italic; }
+
+  .answer-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; margin-bottom: 24px; }
+
+  .answer-btn {
+    padding: 18px 12px; border: 2px solid var(--border); border-radius: 16px;
+    background: var(--surface); color: var(--text); font-family: 'Syne', sans-serif;
+    font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.18s;
+  }
+  .answer-btn:hover:not(:disabled) { border-color: var(--accent); background: rgba(124,58,237,0.1); transform: translateY(-2px); }
+  .answer-btn.correct { border-color: var(--accent4); background: rgba(16,185,129,0.15); color: #6ee7b7; animation: pulseGreen 0.4s ease; }
+  .answer-btn.wrong   { border-color: var(--danger); background: rgba(239,68,68,0.12); color: #fca5a5; animation: shakeIt 0.35s ease; }
+
+  @keyframes pulseGreen { 0%{transform:scale(1)}50%{transform:scale(1.06)}100%{transform:scale(1)} }
+  @keyframes shakeIt { 0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)} }
+
+  /* FEEDBACK BANNER — redesigned to be richer */
+  .feedback {
+    display: none; border-radius: 20px; margin-bottom: 20px;
+    animation: fadeUp 0.3s ease; overflow: hidden;
+  }
+  .feedback.show { display: block; }
+
+  .feedback-top {
+    display: flex; align-items: center; gap: 14px;
+    padding: 18px 24px 12px;
+  }
+  .feedback-icon { font-size: 1.6rem; }
+  .feedback-title { font-family: 'Syne', sans-serif; font-size: 1.05rem; font-weight: 700; }
+  .feedback-subtitle { font-size: 0.82rem; opacity: 0.75; margin-top: 2px; }
+
+  .feedback-explanation {
+    margin: 0 16px 16px;
+    padding: 14px 18px;
+    border-radius: 12px;
+    font-size: 0.88rem;
+    line-height: 1.65;
+  }
+  .feedback-explanation strong { font-family: 'Syne', sans-serif; display: block; margin-bottom: 6px; font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.7; }
+
+  .feedback.correct { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25); color: #d1fae5; }
+  .feedback.correct .feedback-explanation { background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.15); color: #a7f3d0; }
+  .feedback.wrong   { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.22); color: #fee2e2; }
+  .feedback.wrong   .feedback-explanation { background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.15); color: #fecaca; }
+
+  .feedback-tags { display: flex; gap: 8px; flex-wrap: wrap; padding: 0 16px 16px; }
+  .tag {
+    padding: 3px 10px; border-radius: 100px;
+    font-family: 'DM Mono', monospace; font-size: 0.7rem; font-weight: 500;
+  }
+  .feedback.correct .tag { background: rgba(16,185,129,0.15); color: #6ee7b7; }
+  .feedback.wrong   .tag { background: rgba(239,68,68,0.12); color: #fca5a5; }
+
+  .btn-next {
+    width: 100%; padding: 16px; background: var(--accent); color: white;
+    border: none; border-radius: 16px; font-family: 'Syne', sans-serif;
+    font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.2s; display: none;
+  }
+  .btn-next.show { display: block; }
+  .btn-next:hover { background: #6d28d9; transform: translateY(-1px); }
+
+  /* RESULTS */
+  .results-card {
+    text-align: center; padding: 60px 32px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 28px; margin-top: 20px;
+  }
+  .results-emoji { font-size: 4rem; margin-bottom: 20px; }
+  .results-title { font-family: 'Syne', sans-serif; font-size: 2.2rem; font-weight: 800; margin-bottom: 8px; }
+  .results-sub { color: var(--muted); margin-bottom: 40px; }
+  .results-stats { display: flex; justify-content: center; gap: 32px; margin-bottom: 40px; flex-wrap: wrap; }
+  .result-stat { text-align: center; }
+  .result-stat-val { font-family: 'Syne', sans-serif; font-size: 2.5rem; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+  .result-stat-val.green  { color: var(--accent4); }
+  .result-stat-val.purple { color: var(--accent); }
+  .result-stat-val.amber  { color: var(--accent3); }
+  .result-stat-label { font-size: 0.82rem; color: var(--muted); font-family: 'DM Mono', monospace; }
+  .results-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .btn-secondary {
+    padding: 14px 28px; border: 1px solid var(--border); border-radius: 14px;
+    background: var(--surface2); color: var(--text); font-family: 'Syne', sans-serif;
+    font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+  }
+  .btn-secondary:hover { border-color: var(--accent); background: rgba(124,58,237,0.1); }
+
+  /* Missed notes recap */
+  .missed-recap { margin-top: 32px; text-align: left; }
+  .missed-recap-title { font-family: 'DM Mono', monospace; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+  .missed-list { display: flex; flex-direction: column; gap: 8px; }
+  .missed-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px 16px; background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.15); border-radius: 12px;
+    font-size: 0.84rem; color: #fecaca;
+  }
+  .missed-item .mi-q { font-family: 'Syne', sans-serif; font-weight: 700; color: #fca5a5; min-width: 100px; }
+  .missed-item .mi-exp { color: #fecaca; opacity: 0.8; line-height: 1.5; }
+
+  .toast {
+    position: fixed; top: 80px; right: 24px; padding: 12px 20px;
+    border-radius: 12px; background: var(--surface2); border: 1px solid var(--border);
+    font-size: 0.88rem; font-weight: 500; z-index: 200;
+    opacity: 0; transform: translateX(20px); transition: all 0.3s; pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateX(0); }
+  .toast.xp { border-color: rgba(245,158,11,0.4); color: var(--accent3); }
+
+  .streak-pop {
+    position: fixed; top: 50%; left: 50%;
+    transform: translate(-50%,-50%) scale(0);
+    font-size: 5rem; z-index: 300; pointer-events: none;
+    transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1); opacity: 0;
+  }
+  .streak-pop.show { transform: translate(-50%,-80%) scale(1); opacity: 1; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <nav>
+    <div class="logo">Note<span>Quest</span></div>
+    <div class="nav-stats">
+      <div class="stat-pill xp"><span>⚡</span><span id="xpCount">0 XP</span></div>
+      <div class="stat-pill streak"><span>🔥</span><span id="streakCount">0</span></div>
+      <div class="stat-pill lives"><span>❤️</span><span id="livesCount">5</span></div>
+    </div>
+  </nav>
+
+  <main>
+    <!-- HOME -->
+    <div id="homeScreen" class="screen active">
+      <div class="home-hero">
+        <div class="hero-badge">🎵 Learn Music Theory</div>
+        <h1 class="hero-title">Read Music<br><span class="highlight">Like a Pro</span></h1>
+        <p class="hero-sub">Master notes, scales, rhythms and key signatures through fast, addictive mini-games. Every notation is covered — no shortcuts.</p>
+        <button class="btn-primary" onclick="showScreen('modesScreen')">Start Learning →</button>
+      </div>
+    </div>
+
+    <!-- MODES -->
+    <div id="modesScreen" class="screen">
+      <div class="section-label">Choose Your Game</div>
+      <div class="mode-grid">
+        <div class="mode-card" data-color="purple" onclick="startGame('notes')">
+          <span class="mode-icon">🎼</span>
+          <div class="mode-title">Note Identification</div>
+          <div class="mode-desc">Identify every note on the treble clef — from low C to high A. All 12 notes covered per session.</div>
+          <div class="mode-meta">
+            <span class="mode-level">⭐ Beginner</span>
+            <span class="mode-count">12 notes</span>
+          </div>
+        </div>
+        <div class="mode-card" data-color="cyan" onclick="startGame('duration')">
+          <span class="mode-icon">🥁</span>
+          <div class="mode-title">Note Duration</div>
+          <div class="mode-desc">All 8 note values covered — whole, half, quarter, eighth, sixteenth, dotted variants and more.</div>
+          <div class="mode-meta">
+            <span class="mode-level">⭐ Beginner</span>
+            <span class="mode-count">8 values</span>
+          </div>
+        </div>
+        <div class="mode-card" data-color="amber" onclick="startGame('keysig')">
+          <span class="mode-icon">🔑</span>
+          <div class="mode-title">Key Signatures</div>
+          <div class="mode-desc">All 15 major key signatures — every sharp and flat key, including enharmonic equivalents.</div>
+          <div class="mode-meta">
+            <span class="mode-level">⭐⭐ Intermediate</span>
+            <span class="mode-count">15 keys</span>
+          </div>
+        </div>
+        <div class="mode-card" data-color="green" onclick="startGame('rests')">
+          <span class="mode-icon">🤫</span>
+          <div class="mode-title">Rest Values</div>
+          <div class="mode-desc">Identify every rest symbol — whole, half, quarter, eighth and sixteenth rests with beat values.</div>
+          <div class="mode-meta">
+            <span class="mode-level">⭐ Beginner</span>
+            <span class="mode-count">5 rests</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GAME -->
+    <div id="gameScreen" class="screen">
+      <div class="game-header">
+        <button class="btn-back" onclick="showScreen('modesScreen')">← Back</button>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar" id="progressBar" style="width:0%"></div>
+        </div>
+        <div class="q-counter" id="qCounter">1 / ?</div>
+      </div>
+
+      <div class="staff-card" id="staffCard">
+        <div class="question-label" id="questionLabel">What note is this?</div>
+        <canvas id="staffCanvas" width="520" height="170"></canvas>
+        <div class="hint-text" id="hintText">Treble Clef</div>
+      </div>
+
+      <div class="answer-grid" id="answerGrid"></div>
+
+      <div class="feedback" id="feedbackBanner">
+        <div class="feedback-top">
+          <span class="feedback-icon" id="feedbackIcon"></span>
+          <div>
+            <div class="feedback-title" id="feedbackTitle"></div>
+            <div class="feedback-subtitle" id="feedbackSubtitle"></div>
+          </div>
+        </div>
+        <div class="feedback-explanation" id="feedbackExplanation"></div>
+        <div class="feedback-tags" id="feedbackTags"></div>
+      </div>
+
+      <button class="btn-next" id="btnNext" onclick="nextQuestion()">Continue →</button>
+    </div>
+
+    <!-- RESULTS -->
+    <div id="resultsScreen" class="screen">
+      <div class="results-card">
+        <div class="results-emoji" id="resultsEmoji">🎉</div>
+        <div class="results-title" id="resultsTitle">Well Done!</div>
+        <div class="results-sub" id="resultsSub">You completed the lesson</div>
+        <div class="results-stats">
+          <div class="result-stat">
+            <div class="result-stat-val green" id="resCorrect">0</div>
+            <div class="result-stat-label">Correct</div>
+          </div>
+          <div class="result-stat">
+            <div class="result-stat-val purple" id="resXP">+0</div>
+            <div class="result-stat-label">XP Earned</div>
+          </div>
+          <div class="result-stat">
+            <div class="result-stat-val amber" id="resAccuracy">0%</div>
+            <div class="result-stat-label">Accuracy</div>
+          </div>
+        </div>
+        <div class="missed-recap" id="missedRecap" style="display:none">
+          <div class="missed-recap-title">Review what you missed</div>
+          <div class="missed-list" id="missedList"></div>
+        </div>
+        <div class="results-actions" style="margin-top:32px">
+          <button class="btn-secondary" onclick="startGame(currentMode)">Play Again</button>
+          <button class="btn-primary" onclick="showScreen('modesScreen')">Other Games</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="streak-pop" id="streakPop">🔥</div>
+
+<script>
+// ── STATE ───────────────────────────────────────────────────
+let xp = 0, streak = 0, lives = 5;
+let currentMode = '';
+let questions = [], currentQ = 0, score = 0;
+let missedItems = [];
+let answered = false;
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function updateStats() {
+  document.getElementById('xpCount').textContent = xp + ' XP';
+  document.getElementById('streakCount').textContent = streak;
+  document.getElementById('livesCount').textContent = lives;
+}
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast show ' + type;
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+function showStreakPop() {
+  const p = document.getElementById('streakPop');
+  p.classList.add('show');
+  setTimeout(() => p.classList.remove('show'), 1200);
+}
+
+// ── ALL 12 TREBLE CLEF NOTES (C4–A5) ───────────────────────
+// pos: distance from B4 (middle line), in half-line-gap units
+// Even = on a line, Odd = in a space
+const TREBLE_NOTES = [
+  { name:'C4', label:'Middle C', pos:-6, ledger:true,
+    why:'Middle C sits on a ledger line below the treble clef staff. It is the most central note on the piano, right between the bass and treble clef staves.',
+    memory:'One ledger line below — remember "C for Center!"' },
+  { name:'D4', label:'D4', pos:-5,
+    why:'D4 sits in the space just below the first staff line. It is one step above Middle C.',
+    memory:'First space below the staff — just above Middle C.' },
+  { name:'E4', label:'E4', pos:-4,
+    why:'E4 sits on the first (bottom) line of the treble clef staff. The five lines, bottom to top, spell E-G-B-D-F.',
+    memory:'"Every Good Boy Does Fine" — E is the first line!' },
+  { name:'F4', label:'F4', pos:-3,
+    why:'F4 is in the first space from the bottom. The four spaces, bottom to top, spell F-A-C-E.',
+    memory:'"FACE" — F is the first space!' },
+  { name:'G4', label:'G4', pos:-2,
+    why:'G4 sits on the second line. The treble clef curl wraps around this line, which is why it\'s also called the "G clef".',
+    memory:'The treble clef curls around G — that\'s why it\'s the G clef!' },
+  { name:'A4', label:'A4 (Concert Pitch)', pos:-1,
+    why:'A4 is in the second space. This is concert pitch, the standard tuning reference at 440 Hz.',
+    memory:'Second space — A440, the universal tuning note.' },
+  { name:'B4', label:'B4', pos:0,
+    why:'B4 sits on the middle (third) line of the staff. It is right in the centre of the treble clef.',
+    memory:'"Every Good Boy Does Fine" — B is the third (middle) line.' },
+  { name:'C5', label:'C5 (Treble C)', pos:1,
+    why:'C5 is in the third space, one octave above Middle C. A very common note in treble instrument parts.',
+    memory:'Third space — the FACE continues: F-A-C-E, C is third!' },
+  { name:'D5', label:'D5', pos:2,
+    why:'D5 sits on the fourth line of the treble clef staff, a common note in melody lines.',
+    memory:'"Every Good Boy Does Fine" — D is the fourth line.' },
+  { name:'E5', label:'E5', pos:3,
+    why:'E5 is in the fourth (top) space. The FACE mnemonic ends here — E is the last space.',
+    memory:'Top space — FACE: F-A-C-E, E is the fourth space!' },
+  { name:'F5', label:'F5', pos:4,
+    why:'F5 sits on the top (fifth) line of the treble clef staff. It is the highest standard line note.',
+    memory:'"Every Good Boy Does Fine" — F is the top (fifth) line.' },
+  { name:'G5', label:'G5', pos:5,
+    why:'G5 is in the space just above the top staff line. Notes above the staff keep going up by step.',
+    memory:'Just above the top line — one step higher than the top F.' },
+  { name:'A5', label:'A5', pos:6,
+    why:'A5 sits on a ledger line above the treble clef staff, one octave above A4.',
+    memory:'First ledger line above the staff — high A!' },
+];
+
+// ── ALL 8 NOTE DURATIONS ────────────────────────────────────
+const DURATIONS = [
+  { name:'Whole Note', symbol:'𝅝', beats:4, color:'#a78bfa', beatStr:'4 beats',
+    why:'The whole note gets 4 beats in 4/4 time. It is an open oval with no stem. It fills the entire measure.',
+    memory:'Think of it as a whole measure — open, empty, lasts forever.' },
+  { name:'Half Note', symbol:'𝅗𝅥', beats:2, color:'#67e8f9', beatStr:'2 beats',
+    why:'The half note gets 2 beats. It looks like a whole note but has a stem. Half of a whole note.',
+    memory:'Open head + stem = half. Two halves make a whole.' },
+  { name:'Quarter Note', symbol:'♩', beats:1, color:'#fcd34d', beatStr:'1 beat',
+    why:'The quarter note gets 1 beat — the basic pulse in most music. Filled head with a stem.',
+    memory:'Filled head + stem = quarter. Your foot tap is usually a quarter note.' },
+  { name:'Eighth Note', symbol:'♪', beats:0.5, color:'#6ee7b7', beatStr:'½ beat',
+    why:'The eighth note gets half a beat. Filled head, stem, and one flag (or beam when paired).',
+    memory:'One flag = one eighth. Count "1-and" — the "and" is an eighth note.' },
+  { name:'Sixteenth Note', symbol:'𝅘𝅥𝅯', beats:0.25, color:'#f9a8d4', beatStr:'¼ beat',
+    why:'The sixteenth note gets a quarter beat. It has two flags/beams. Very fast — four per beat.',
+    memory:'Two flags = sixteenth. Count "1-e-and-a" — each syllable is a sixteenth.' },
+  { name:'Dotted Half Note', symbol:'𝅗𝅥.', beats:3, color:'#fb923c', beatStr:'3 beats',
+    why:'A dot after a note adds half its value. Half (2) + half of half (1) = 3 beats.',
+    memory:'Dot = +50% duration. Half note dot = 2 + 1 = 3 beats.' },
+  { name:'Dotted Quarter Note', symbol:'♩.', beats:1.5, color:'#34d399', beatStr:'1½ beats',
+    why:'Dotted quarter = 1 + ½ = 1½ beats. Very common in compound rhythms and syncopation.',
+    memory:'Quarter (1) + dot (½) = 1.5 beats — you\'ll see this everywhere!' },
+  { name:'Double Whole Note', symbol:'𝅜', beats:8, color:'#818cf8', beatStr:'8 beats',
+    why:'The double whole note (breve) lasts 8 beats. Rare in modern music, used in choral/early music.',
+    memory:'Two vertical lines framing an oval — double the whole note.' },
+];
+
+// ── ALL 5 REST VALUES ───────────────────────────────────────
+const RESTS = [
+  { name:'Whole Rest', symbol:'▬', beats:4, color:'#a78bfa', beatStr:'4 beats (full measure)',
+    why:'The whole rest hangs below a staff line like a hat. It also means "rest for the whole measure" regardless of time signature.',
+    memory:'Whole rest HANGS down — heavy like a full measure of silence.' },
+  { name:'Half Rest', symbol:'▭', beats:2, color:'#67e8f9', beatStr:'2 beats',
+    why:'The half rest sits on top of a staff line like a hat/mound. Opposite of whole rest — it sits UP.',
+    memory:'Half rest SITS up — lighter, half the silence. Up = half, Down = whole.' },
+  { name:'Quarter Rest', symbol:'𝄽', beats:1, color:'#fcd34d', beatStr:'1 beat',
+    why:'The quarter rest has a distinctive squiggly/zigzag shape. It gets 1 beat, same as a quarter note.',
+    memory:'Squiggly zigzag = quarter rest. One beat of silence.' },
+  { name:'Eighth Rest', symbol:'𝄾', beats:0.5, color:'#6ee7b7', beatStr:'½ beat',
+    why:'The eighth rest looks like a slanted "7" or a flag. Half a beat of silence, matching the eighth note.',
+    memory:'Like a "7" with a dot — half beat rest.' },
+  { name:'Sixteenth Rest', symbol:'𝄿', beats:0.25, color:'#f9a8d4', beatStr:'¼ beat',
+    why:'The sixteenth rest has two flags/slashes — matching the two flags of a sixteenth note.',
+    memory:'Two flags = sixteenth. The fastest common rest.' },
+];
+
+// ── ALL 15 KEY SIGNATURES ───────────────────────────────────
+const KEY_SIGS = [
+  { key:'C Major', sharps:0, flats:0,
+    display:'No sharps or flats', notes:'C D E F G A B',
+    why:'C major is the natural scale — all white piano keys. No sharps or flats needed.',
+    memory:'No accidentals = C major. The "plain" key.' },
+  { key:'G Major', sharps:1, flats:0,
+    display:'1 sharp: F#', notes:'G A B C D E F#',
+    why:'G major has one sharp: F#. Every note is natural except F, which is raised to F#.',
+    memory:'1 sharp = G major. "Go" = G. The Circle of Fifths starts here.' },
+  { key:'D Major', sharps:2, flats:0,
+    display:'2 sharps: F#, C#', notes:'D E F# G A B C#',
+    why:'D major has F# and C#. Two sharps — moving up the circle of fifths from G.',
+    memory:'2 sharps = D major. "Do Re Mi" starts on D!' },
+  { key:'A Major', sharps:3, flats:0,
+    display:'3 sharps: F#, C#, G#', notes:'A B C# D E F# G#',
+    why:'A major has F#, C# and G#. Three sharps — a bright, vibrant key for guitars and strings.',
+    memory:'3 sharps = A major. Guitar\'s favourite key!' },
+  { key:'E Major', sharps:4, flats:0,
+    display:'4 sharps: F#, C#, G#, D#', notes:'E F# G# A B C# D#',
+    why:'E major has 4 sharps. Very common for rock guitar. Clean, open-sounding key.',
+    memory:'4 sharps = E major. Rock guitar loves E major!' },
+  { key:'B Major', sharps:5, flats:0,
+    display:'5 sharps: F#, C#, G#, D#, A#', notes:'B C# D# E F# G# A#',
+    why:'B major has 5 sharps. Enharmonically equivalent to Cb major (7 flats).',
+    memory:'5 sharps = B major. Five fingers, five sharps!' },
+  { key:'F# Major', sharps:6, flats:0,
+    display:'6 sharps: F#, C#, G#, D#, A#, E#', notes:'F# G# A# B C# D# E#',
+    why:'F# major has 6 sharps. E# is enharmonic to F natural. Equivalent to Gb major.',
+    memory:'6 sharps = F# (or Gb). Nearly all sharps!' },
+  { key:'C# Major', sharps:7, flats:0,
+    display:'7 sharps: F#, C#, G#, D#, A#, E#, B#', notes:'C# D# E# F# G# A# B#',
+    why:'C# major has all 7 sharps. B# = C natural, E# = F natural. Same sound as Db major.',
+    memory:'7 sharps = C# major. All sharps — the most sharp key!' },
+  { key:'F Major', sharps:0, flats:1,
+    display:'1 flat: Bb', notes:'F G A Bb C D E',
+    why:'F major has one flat: Bb. The first key on the flat side of the circle of fifths.',
+    memory:'1 flat = F major. "Flat" starts with F!' },
+  { key:'Bb Major', sharps:0, flats:2,
+    display:'2 flats: Bb, Eb', notes:'Bb C D Eb F G A',
+    why:'Bb major has Bb and Eb. Extremely common for brass instruments and jazz.',
+    memory:'2 flats = Bb major. Brass band favourite!' },
+  { key:'Eb Major', sharps:0, flats:3,
+    display:'3 flats: Bb, Eb, Ab', notes:'Eb F G Ab Bb C D',
+    why:'Eb major has 3 flats. Common for brass instruments, jazz standards, and orchestral music.',
+    memory:'3 flats = Eb major. Jazz loves Eb!' },
+  { key:'Ab Major', sharps:0, flats:4,
+    display:'4 flats: Bb, Eb, Ab, Db', notes:'Ab Bb C Db Eb F G',
+    why:'Ab major has 4 flats. A warm, rich key often used in Romantic piano music.',
+    memory:'4 flats = Ab major. Romantic and lush.' },
+  { key:'Db Major', sharps:0, flats:5,
+    display:'5 flats: Bb, Eb, Ab, Db, Gb', notes:'Db Eb F Gb Ab Bb C',
+    why:'Db major has 5 flats. Enharmonic to C# major. Chopin loved this key.',
+    memory:'5 flats = Db major. Chopin\'s favourite!' },
+  { key:'Gb Major', sharps:0, flats:6,
+    display:'6 flats: Bb, Eb, Ab, Db, Gb, Cb', notes:'Gb Ab Bb Cb Db Eb F',
+    why:'Gb major has 6 flats. Cb = B natural. Enharmonic to F# major.',
+    memory:'6 flats = Gb (or F# major). Mirror of F# major.' },
+  { key:'Cb Major', sharps:0, flats:7,
+    display:'7 flats: Bb, Eb, Ab, Db, Gb, Cb, Fb', notes:'Cb Db Eb Fb Gb Ab Bb',
+    why:'Cb major has all 7 flats. Fb = E natural, Cb = B natural. Same sound as B major.',
+    memory:'7 flats = Cb major. All flats — the most flat key!' },
+];
+
+// ── SHUFFLE ─────────────────────────────────────────────────
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i+1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ── BUILD QUESTIONS — exhaustive deck, every item appears once ──
+function startGame(mode) {
+  currentMode = mode;
+  currentQ = 0; score = 0; answered = false; missedItems = [];
+  questions = buildQuestions(mode);
+  showScreen('gameScreen');
+  document.getElementById('qCounter').textContent = '1 / ' + questions.length;
+  loadQuestion();
+}
+
+function buildQuestions(mode) {
+  if (mode === 'notes')    return buildNoteQuestions();
+  if (mode === 'duration') return buildDurationQuestions();
+  if (mode === 'keysig')   return buildKeySigQuestions();
+  if (mode === 'rests')    return buildRestQuestions();
+  return [];
+}
+
+function buildNoteQuestions() {
+  return shuffle(TREBLE_NOTES).map(note => {
+    const allNames = TREBLE_NOTES.map(n => n.name);
+    const pool = allNames.filter(n => n !== note.name);
+    const wrongs = shuffle(pool).slice(0, 3);
+    return {
+      type: 'notes', note,
+      answer: note.name,
+      options: shuffle([note.name, ...wrongs]),
+    };
+  });
+}
+
+function buildDurationQuestions() {
+  return shuffle(DURATIONS).map(dur => {
+    const pool = DURATIONS.filter(d => d.name !== dur.name);
+    const wrongs = shuffle(pool).slice(0, 3);
+    return {
+      type: 'duration', dur,
+      answer: dur.name,
+      options: shuffle([dur.name, ...wrongs.map(d => d.name)]),
+    };
+  });
+}
+
+function buildRestQuestions() {
+  return shuffle(RESTS).map(rest => {
+    const pool = RESTS.filter(r => r.name !== rest.name);
+    const wrongs = shuffle(pool).slice(0, 3);
+    return {
+      type: 'rest', rest,
+      answer: rest.name,
+      options: shuffle([rest.name, ...wrongs.map(r => r.name)]),
+    };
+  });
+}
+
+function buildKeySigQuestions() {
+  return shuffle(KEY_SIGS).map(ks => {
+    const pool = KEY_SIGS.filter(k => k.key !== ks.key);
+    const wrongs = shuffle(pool).slice(0, 3);
+    return {
+      type: 'keysig', ks,
+      answer: ks.key,
+      options: shuffle([ks.key, ...wrongs.map(k => k.key)]),
+    };
+  });
+}
+
+// ── LOAD QUESTION ───────────────────────────────────────────
+function loadQuestion() {
+  answered = false;
+  const q = questions[currentQ];
+  const total = questions.length;
+
+  document.getElementById('progressBar').style.width = (currentQ / total * 100) + '%';
+  document.getElementById('qCounter').textContent = (currentQ + 1) + ' / ' + total;
+
+  document.getElementById('feedbackBanner').className = 'feedback';
+  document.getElementById('btnNext').className = 'btn-next';
+
+  if (q.type === 'notes')    renderNoteQ(q);
+  if (q.type === 'duration') renderDurationQ(q);
+  if (q.type === 'rest')     renderRestQ(q);
+  if (q.type === 'keysig')   renderKeySigQ(q);
+}
+
+function renderNoteQ(q) {
+  document.getElementById('questionLabel').textContent = 'What note is this?';
+  document.getElementById('hintText').textContent = 'Treble Clef' + (q.note.label !== q.note.name ? ' — ' + q.note.label : '');
+  drawNote(q.note);
+  renderAnswerBtns(q.options, q.answer);
+}
+function renderDurationQ(q) {
+  document.getElementById('questionLabel').textContent = 'What is this note value called?';
+  document.getElementById('hintText').textContent = 'Duration · ' + q.dur.beatStr;
+  drawDuration(q.dur);
+  renderAnswerBtns(q.options, q.answer);
+}
+function renderRestQ(q) {
+  document.getElementById('questionLabel').textContent = 'What rest symbol is this?';
+  document.getElementById('hintText').textContent = 'Rest · ' + q.rest.beatStr;
+  drawRest(q.rest);
+  renderAnswerBtns(q.options, q.answer);
+}
+function renderKeySigQ(q) {
+  document.getElementById('questionLabel').textContent = 'Which key signature is this?';
+  document.getElementById('hintText').textContent = q.ks.display;
+  drawKeySig(q.ks);
+  renderAnswerBtns(q.options, q.answer);
+}
+
+// ── CANVAS ──────────────────────────────────────────────────
+function drawStaff(ctx, W) {
+  const staffTop = 48, lineGap = 16;
+  ctx.strokeStyle = '#3a3a60';
+  ctx.lineWidth = 1.5;
+  for (let i = 0; i < 5; i++) {
+    const y = staffTop + i * lineGap;
+    ctx.beginPath(); ctx.moveTo(80, y); ctx.lineTo(W - 80, y); ctx.stroke();
+  }
+  // Treble clef
+  ctx.font = `${staffTop + lineGap * 4 + 12}px serif`;
+  ctx.fillStyle = '#555580';
+  ctx.textAlign = 'left';
+  ctx.fillText('𝄞', 82, staffTop + lineGap * 4 + 10);
+  return { staffTop, lineGap };
+}
+
+function drawNote(note) {
+  const canvas = document.getElementById('staffCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  const { staffTop, lineGap } = drawStaff(ctx, W);
+
+  const midX = W / 2 + 10;
+  // B4 is the middle line (pos=0), at staffTop + 2*lineGap
+  const baseY = staffTop + 2 * lineGap; // B4
+  const noteY = baseY - (note.pos * lineGap / 2);
+  const r = 8.5;
+
+  // Ledger lines
+  ctx.strokeStyle = '#4a4a70'; ctx.lineWidth = 1.8;
+  // Below staff: pos <= -5 needs ledger lines
+  if (note.pos <= -5) {
+    for (let p = -6; p >= note.pos; p -= 2) {
+      if (p % 2 === 0) { // only on note positions (lines)
+        const ly = baseY - (p * lineGap / 2);
+        ctx.beginPath(); ctx.moveTo(midX - 22, ly); ctx.lineTo(midX + 22, ly); ctx.stroke();
+      }
+    }
+  }
+  // Above staff: pos >= 6
+  if (note.pos >= 6) {
+    for (let p = 6; p <= note.pos; p += 2) {
+      const ly = baseY - (p * lineGap / 2);
+      ctx.beginPath(); ctx.moveTo(midX - 22, ly); ctx.lineTo(midX + 22, ly); ctx.stroke();
+    }
+  }
+
+  // Glow
+  const grd = ctx.createRadialGradient(midX, noteY, 0, midX, noteY, 28);
+  grd.addColorStop(0, 'rgba(124,58,237,0.22)');
+  grd.addColorStop(1, 'rgba(124,58,237,0)');
+  ctx.fillStyle = grd;
+  ctx.beginPath(); ctx.arc(midX, noteY, 28, 0, Math.PI*2); ctx.fill();
+
+  // Note head
+  ctx.save();
+  ctx.translate(midX, noteY);
+  ctx.rotate(-0.25);
+  ctx.beginPath();
+  ctx.ellipse(0, 0, r * 1.35, r, 0, 0, Math.PI * 2);
+  ctx.fillStyle = '#7c3aed'; ctx.fill();
+  ctx.strokeStyle = '#a78bfa'; ctx.lineWidth = 1; ctx.stroke();
+  ctx.restore();
+
+  // Stem
+  const stemDir = note.pos >= 0 ? -1 : 1;
+  const stemX = midX + (stemDir < 0 ? r*1.3 : -r*1.3);
+  ctx.beginPath();
+  ctx.moveTo(stemX, noteY);
+  ctx.lineTo(stemX, noteY - stemDir * lineGap * 3.5);
+  ctx.strokeStyle = '#7c3aed'; ctx.lineWidth = 2; ctx.stroke();
+}
+
+function drawDuration(dur) {
+  const canvas = document.getElementById('staffCanvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Background glow
+  const grd = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 0, canvas.width/2, canvas.height/2, 80);
+  grd.addColorStop(0, (dur.color || '#a78bfa') + '22');
+  grd.addColorStop(1, 'transparent');
+  ctx.fillStyle = grd;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.font = 'bold 76px serif';
+  ctx.fillStyle = dur.color || '#a78bfa';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(dur.symbol, canvas.width/2, canvas.height/2 - 10);
+
+  ctx.font = '500 13px "DM Mono", monospace';
+  ctx.fillStyle = '#6b7280';
+  ctx.fillText(dur.beatStr, canvas.width/2, canvas.height - 16);
+}
+
+function drawRest(rest) {
+  const canvas = document.getElementById('staffCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  // Draw staff for context
+  const { staffTop, lineGap } = drawStaff(ctx, W);
+
+  const cx = W / 2 + 10;
+
+  ctx.font = '500 13px "DM Mono", monospace';
+  ctx.fillStyle = '#6b7280';
+  ctx.textAlign = 'center';
+
+  if (rest.name === 'Whole Rest') {
+    // Hangs below a line
+    const y = staffTop + lineGap; // below second line
+    ctx.fillStyle = rest.color;
+    ctx.fillRect(cx - 22, y, 44, 14);
+    ctx.fillStyle = '#6b7280';
+    ctx.fillText(rest.beatStr, cx, H - 16);
+  } else if (rest.name === 'Half Rest') {
+    // Sits on top of a line
+    const y = staffTop + lineGap * 2;
+    ctx.fillStyle = rest.color;
+    ctx.fillRect(cx - 22, y - 14, 44, 14);
+    ctx.fillStyle = '#6b7280';
+    ctx.fillText(rest.beatStr, cx, H - 16);
+  } else {
+    // Render symbol large
+    const grd = ctx.createRadialGradient(cx, H/2, 0, cx, H/2, 70);
+    grd.addColorStop(0, (rest.color || '#a78bfa') + '22');
+    grd.addColorStop(1, 'transparent');
+    ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
+
+    ctx.font = 'bold 68px serif';
+    ctx.fillStyle = rest.color || '#a78bfa';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(rest.symbol, cx, H/2 - 10);
+    ctx.font = '500 13px "DM Mono", monospace';
+    ctx.fillStyle = '#6b7280';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText(rest.beatStr, cx, H - 16);
+  }
+}
+
+function drawKeySig(ks) {
+  const canvas = document.getElementById('staffCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  const { staffTop, lineGap } = drawStaff(ctx, W);
+
+  ctx.textAlign = 'center';
+
+  if (ks.sharps === 0 && ks.flats === 0) {
+    ctx.font = '800 36px "Syne", sans-serif';
+    ctx.fillStyle = '#f59e0b';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('C', W/2 + 10, H/2 - 4);
+    ctx.font = '500 12px "DM Mono", monospace';
+    ctx.fillStyle = '#4a4a70';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText('No accidentals', W/2, H - 14);
+  } else if (ks.sharps > 0) {
+    // Sharp positions on treble clef: F5, C5, G5, D5, A4, E5, B4
+    // In staff coords (pos from B4 center):
+    const sharpPos = [4, 1, 5, 2, -1, 3, 0]; // pos values
+    ctx.font = '900 26px serif';
+    ctx.fillStyle = '#f59e0b';
+    ctx.textBaseline = 'alphabetic';
+    const baseY = staffTop + 2 * lineGap;
+    for (let i = 0; i < ks.sharps; i++) {
+      const sy = baseY - (sharpPos[i] * lineGap / 2) + 8;
+      ctx.fillText('♯', 175 + i * 26, sy);
+    }
+  } else {
+    // Flat positions on treble clef: B4, E5, A4, D5, G4, C5, F4
+    const flatPos = [0, 3, -1, 2, -2, 1, -3];
+    ctx.font = '900 26px serif';
+    ctx.fillStyle = '#67e8f9';
+    ctx.textBaseline = 'alphabetic';
+    const baseY = staffTop + 2 * lineGap;
+    for (let i = 0; i < ks.flats; i++) {
+      const fy = baseY - (flatPos[i] * lineGap / 2) + 8;
+      ctx.fillText('♭', 175 + i * 26, fy);
+    }
+  }
+}
+
+// ── ANSWER BUTTONS ───────────────────────────────────────────
+function renderAnswerBtns(options, correct) {
+  const grid = document.getElementById('answerGrid');
+  grid.innerHTML = '';
+  options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'answer-btn';
+    btn.textContent = opt;
+    btn.onclick = () => checkAnswer(opt, correct, btn);
+    grid.appendChild(btn);
+  });
+}
+
+function checkAnswer(selected, correct, btn) {
+  if (answered) return;
+  answered = true;
+  const allBtns = document.querySelectorAll('.answer-btn');
+  allBtns.forEach(b => b.disabled = true);
+
+  const isCorrect = selected === correct;
+  const q = questions[currentQ];
+  const fb = document.getElementById('feedbackBanner');
+
+  if (isCorrect) {
+    btn.classList.add('correct');
+    score++; xp += 10; streak++;
+    fb.className = 'feedback correct show';
+    document.getElementById('feedbackIcon').textContent = '✅';
+    document.getElementById('feedbackTitle').textContent = 'Correct!';
+    document.getElementById('feedbackSubtitle').textContent = correct;
+    showFeedbackExplanation(q, true);
+    showToast('+10 XP ⚡', 'xp');
+    if (streak > 0 && streak % 5 === 0) showStreakPop();
+  } else {
+    btn.classList.add('wrong');
+    allBtns.forEach(b => { if (b.textContent === correct) b.classList.add('correct'); });
+    if (lives > 0) lives--;
+    streak = 0;
+    fb.className = 'feedback wrong show';
+    document.getElementById('feedbackIcon').textContent = '❌';
+    document.getElementById('feedbackTitle').textContent = 'Not quite — the answer is:';
+    document.getElementById('feedbackSubtitle').textContent = correct;
+    showFeedbackExplanation(q, false);
+    missedItems.push({ q, selected, correct });
+  }
+
+  updateStats();
+  document.getElementById('btnNext').className = 'btn-next show';
+}
+
+function showFeedbackExplanation(q, isCorrect) {
+  const expEl = document.getElementById('feedbackExplanation');
+  const tagsEl = document.getElementById('feedbackTags');
+  tagsEl.innerHTML = '';
+
+  let why = '', memory = '', tags = [];
+
+  if (q.type === 'notes') {
+    why = q.note.why;
+    memory = q.note.memory;
+    tags = [q.note.name, q.note.label, 'Treble Clef'];
+  } else if (q.type === 'duration') {
+    why = q.dur.why;
+    memory = q.dur.memory;
+    tags = [q.dur.beatStr, q.dur.name];
+  } else if (q.type === 'rest') {
+    why = q.rest.why;
+    memory = q.rest.memory;
+    tags = [q.rest.beatStr, q.rest.name];
+  } else if (q.type === 'keysig') {
+    why = q.ks.why;
+    memory = '🎵 Notes: ' + q.ks.notes;
+    tags = [q.ks.display, q.ks.key];
+  }
+
+  expEl.innerHTML = `<strong>Why?</strong>${why}<br><br><em>💡 Memory tip: ${memory}</em>`;
+
+  tags.forEach(tag => {
+    const el = document.createElement('span');
+    el.className = 'tag';
+    el.textContent = tag;
+    tagsEl.appendChild(el);
+  });
+}
+
+// ── NEXT / RESULTS ───────────────────────────────────────────
+function nextQuestion() {
+  currentQ++;
+  if (currentQ >= questions.length) {
+    showResults();
+  } else {
+    loadQuestion();
+  }
+}
+
+function showResults() {
+  const total = questions.length;
+  const acc = Math.round((score / total) * 100);
+  const earned = score * 10;
+
+  document.getElementById('resCorrect').textContent = score + '/' + total;
+  document.getElementById('resXP').textContent = '+' + earned;
+  document.getElementById('resAccuracy').textContent = acc + '%';
+
+  if (acc === 100) {
+    document.getElementById('resultsEmoji').textContent = '🏆';
+    document.getElementById('resultsTitle').textContent = 'Perfect Score!';
+    document.getElementById('resultsSub').textContent = 'Flawless. You know every notation!';
+  } else if (acc >= 70) {
+    document.getElementById('resultsEmoji').textContent = '🎉';
+    document.getElementById('resultsTitle').textContent = 'Well Done!';
+    document.getElementById('resultsSub').textContent = 'Great session — review the missed ones below.';
+  } else {
+    document.getElementById('resultsEmoji').textContent = '💪';
+    document.getElementById('resultsTitle').textContent = 'Keep Practicing!';
+    document.getElementById('resultsSub').textContent = 'Study the explanations below and try again!';
+  }
+
+  // Missed items recap
+  const recap = document.getElementById('missedRecap');
+  const list = document.getElementById('missedList');
+  list.innerHTML = '';
+  if (missedItems.length > 0) {
+    recap.style.display = 'block';
+    missedItems.forEach(m => {
+      const div = document.createElement('div');
+      div.className = 'missed-item';
+      let qLabel = m.correct;
+      let exp = '';
+      if (m.q.type === 'notes') exp = m.q.note.why + ' 💡 ' + m.q.note.memory;
+      else if (m.q.type === 'duration') exp = m.q.dur.why + ' 💡 ' + m.q.dur.memory;
+      else if (m.q.type === 'rest') exp = m.q.rest.why + ' 💡 ' + m.q.rest.memory;
+      else if (m.q.type === 'keysig') exp = m.q.ks.why + ' Notes: ' + m.q.ks.notes;
+      div.innerHTML = `<span class="mi-q">${qLabel}</span><span class="mi-exp">${exp}</span>`;
+      list.appendChild(div);
+    });
+  } else {
+    recap.style.display = 'none';
+  }
+
+  showScreen('resultsScreen');
+}
+
+updateStats();
+</script>
+</body>
+</html>
