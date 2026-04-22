@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NoteQuest — Master Music Theory</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a12;
+    --surface: #12121e;
+    --surface2: #1a1a2e;
+    --border: #2a2a44;
+    --accent: #7c3aed;
+    --accent2: #06b6d4;
+    --accent3: #f59e0b;
+    --accent4: #10b981;
+    --danger: #ef4444;
+    --text: #f0f0ff;
+    --muted: #6b7280;
+    --staff-line: #2e2e50;
+    --note-fill: #7c3aed;
+    --ledger: #3a3a60;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated background */
+  body::before {
+    content: '';
+    position: fixed;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(ellipse at 20% 50%, rgba(124,58,237,0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(6,182,212,0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 60% 80%, rgba(245,158,11,0.05) 0%, transparent 40%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app { position: relative; z-index: 1; }
+
+  /* ── TOP NAV ── */
+  nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 32px;
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+    background: rgba(10,10,18,0.8);
+    position: sticky; top: 0; z-index: 100;
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.4rem;
+    letter-spacing: -0.02em;
+  }
+  .logo span { color: var(--accent2); }
+
+  .nav-stats { display: flex; gap: 20px; }
+
+  .stat-pill {
+    display: flex; align-items: center; gap: 7px;
+    padding: 7px 14px;
+    border-radius: 100px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.82rem;
+    font-weight: 500;
+  }
+  .stat-pill .icon { font-size: 1rem; }
+  .stat-pill.xp { color: var(--accent3); }
+  .stat-pill.streak { color: #f97316; }
+  .stat-pill.lives { color: var(--danger); }
+
+  /* ── MAIN LAYOUT ── */
+  main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  /* ── SCREENS ── */
+  .screen { display: none; animation: fadeUp 0.4s ease; }
+  .screen.active { display: block; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── HOME SCREEN ── */
+  .home-hero {
+    text-align: center;
+    padding: 60px 0 40px;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    border-radius: 100px;
+    background: rgba(124,58,237,0.15);
+    border: 1px solid rgba(124,58,237,0.3);
+    font-size: 0.78rem;
+    color: #a78bfa;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+
+  .hero-title {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2.8rem, 7vw, 5rem);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    margin-bottom: 16px;
+  }
+  .hero-title .highlight {
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-sub {
+    color: var(--muted);
+    font-size: 1.05rem;
+    line-height: 1.6;
+    max-width: 480px;
+    margin: 0 auto 40px;
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 36px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 16px;
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 0 40px rgba(124,58,237,0.4);
+  }
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 60px rgba(124,58,237,0.6);
+  }
+  .btn-primary:active { transform: translateY(0); }
+
+  /* Mode Cards */
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 20px;
+    margin-top: 56px;
+  }
+
+  .mode-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+  }
+
+  .mode-card {
+    position: relative;
+    padding: 28px 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.25s;
+    overflow: hidden;
+  }
+  .mode-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    border-radius: 20px 20px 0 0;
+    opacity: 0;
+    transition: opacity 0.25s;
+  }
+  .mode-card:hover { border-color: var(--accent); transform: translateY(-4px); }
+  .mode-card:hover::before { opacity: 1; }
+
+  .mode-card[data-color="purple"]::before { background: var(--accent); }
+  .mode-card[data-color="cyan"]::before   { background: var(--accent2); }
+  .mode-card[data-color="amber"]::before  { background: var(--accent3); }
+  .mode-card[data-color="green"]::before  { background: var(--accent4); }
+
+  .mode-card[data-color="purple"]:hover { border-color: var(--accent); box-shadow: 0 8px 32px rgba(124,58,237,0.2); }
+  .mode-card[data-color="cyan"]:hover   { border-color: var(--accent2); box-shadow: 0 8px 32px rgba(6,182,212,0.2); }
+  .mode-card[data-color="amber"]:hover  { border-color: var(--accent3); box-shadow: 0 8px 32px rgba(245,158,11,0.2); }
+  .mode-card[data-color="green"]:hover  { border-color: var(--accent4); box-shadow: 0 8px 32px rgba(16,185,129,0.2); }
+
+  .mode-icon {
+    font-size: 2.2rem;
+    margin-bottom: 16px;
+    display: block;
+  }
+  .mode-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .mode-desc {
+    font-size: 0.85rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .mode-level {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 16px;
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 500;
+  }
+  .mode-card[data-color="purple"] .mode-level { background: rgba(124,58,237,0.15); color: #a78bfa; }
+  .mode-card[data-color="cyan"] .mode-level   { background: rgba(6,182,212,0.15);  color: #67e8f9; }
+  .mode-card[data-color="amber"] .mode-level  { background: rgba(245,158,11,0.15); color: #fcd34d; }
+  .mode-card[data-color="green"] .mode-level  { background: rgba(16,185,129,0.15); color: #6ee7b7; }
+  .mode-locked { opacity: 0.45; pointer-events: none; }
+
+  /* ── GAME SCREEN ── */
+  .game-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .btn-back {
+    display: flex; align-items: center; gap: 6px;
+    padding: 9px 16px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+  }
+  .btn-back:hover { border-color: var(--text); color: var(--text); }
+
+  .progress-bar-wrap {
+    flex: 1;
+    height: 8px;
+    background: var(--surface2);
+    border-radius: 100px;
+    overflow: hidden;
+  }
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 100px;
+    transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  .q-counter {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.82rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  /* Staff Card */
+  .staff-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 40px 32px 32px;
+    text-align: center;
+    margin-bottom: 28px;
+    position: relative;
+    overflow: hidden;
+  }
+  .staff-card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(124,58,237,0.06) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .question-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 24px;
+  }
+
+  canvas#staffCanvas {
+    display: block;
+    margin: 0 auto 16px;
+    border-radius: 12px;
+  }
+
+  .hint-text {
+    font-size: 0.82rem;
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  /* Answer Grid */
+  .answer-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .answer-btn {
+    padding: 18px 12px;
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    background: var(--surface);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s;
+    position: relative;
+    overflow: hidden;
+  }
+  .answer-btn:hover:not(:disabled) {
+    border-color: var(--accent);
+    background: rgba(124,58,237,0.1);
+    transform: translateY(-2px);
+  }
+  .answer-btn.correct {
+    border-color: var(--accent4);
+    background: rgba(16,185,129,0.15);
+    color: #6ee7b7;
+    animation: pulseGreen 0.4s ease;
+  }
+  .answer-btn.wrong {
+    border-color: var(--danger);
+    background: rgba(239,68,68,0.12);
+    color: #fca5a5;
+    animation: shakeIt 0.35s ease;
+  }
+
+  @keyframes pulseGreen {
+    0%   { transform: scale(1); }
+    50%  { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+  @keyframes shakeIt {
+    0%, 100% { transform: translateX(0); }
+    25%       { transform: translateX(-6px); }
+    75%       { transform: translateX(6px); }
+  }
+
+  /* Feedback banner */
+  .feedback {
+    display: none;
+    padding: 18px 24px;
+    border-radius: 16px;
+    margin-bottom: 20px;
+    align-items: center;
+    gap: 14px;
+    font-weight: 500;
+    animation: fadeUp 0.3s ease;
+  }
+  .feedback.show { display: flex; }
+  .feedback.correct {
+    background: rgba(16,185,129,0.12);
+    border: 1px solid rgba(16,185,129,0.3);
+    color: #6ee7b7;
+  }
+  .feedback.wrong {
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.25);
+    color: #fca5a5;
+  }
+  .feedback-icon { font-size: 1.5rem; }
+  .feedback-text { flex: 1; }
+  .feedback-text strong { display: block; font-family: 'Syne', sans-serif; font-size: 1rem; }
+  .feedback-text span { font-size: 0.85rem; opacity: 0.8; }
+
+  .btn-next {
+    width: 100%;
+    padding: 16px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 16px;
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: none;
+  }
+  .btn-next.show { display: block; }
+  .btn-next:hover { background: #6d28d9; transform: translateY(-1px); }
+
+  /* ── RESULTS SCREEN ── */
+  .results-card {
+    text-align: center;
+    padding: 60px 32px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 28px;
+    margin-top: 20px;
+  }
+  .results-emoji { font-size: 4rem; margin-bottom: 20px; }
+  .results-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 2.2rem;
+    font-weight: 800;
+    margin-bottom: 8px;
+  }
+  .results-sub { color: var(--muted); margin-bottom: 40px; }
+
+  .results-stats {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+  }
+  .result-stat {
+    text-align: center;
+  }
+  .result-stat-val {
+    font-family: 'Syne', sans-serif;
+    font-size: 2.5rem;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .result-stat-val.green  { color: var(--accent4); }
+  .result-stat-val.purple { color: var(--accent); }
+  .result-stat-val.amber  { color: var(--accent3); }
+  .result-stat-label { font-size: 0.82rem; color: var(--muted); font-family: 'DM Mono', monospace; }
+
+  .results-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+  .btn-secondary {
+    padding: 14px 28px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--surface2);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-secondary:hover { border-color: var(--accent); background: rgba(124,58,237,0.1); }
+
+  /* Duration game specific */
+  .duration-display {
+    font-size: 4rem;
+    margin: 20px 0;
+    filter: drop-shadow(0 0 20px rgba(124,58,237,0.5));
+  }
+  .duration-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--accent2);
+    margin-bottom: 8px;
+  }
+
+  /* Key Sig game specific */
+  .keysig-display {
+    font-family: 'DM Mono', monospace;
+    font-size: 2.8rem;
+    font-weight: 500;
+    color: var(--accent3);
+    margin: 16px 0;
+    letter-spacing: 0.08em;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    top: 80px; right: 24px;
+    padding: 12px 20px;
+    border-radius: 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    font-size: 0.88rem;
+    font-weight: 500;
+    z-index: 200;
+    opacity: 0;
+    transform: translateX(20px);
+    transition: all 0.3s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateX(0); }
+  .toast.xp { border-color: rgba(245,158,11,0.4); color: var(--accent3); }
+
+  /* Streak flame */
+  .streak-pop {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%,-50%) scale(0);
+    font-size: 5rem;
+    z-index: 300;
+    pointer-events: none;
+    transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    opacity: 0;
+  }
+  .streak-pop.show {
+    transform: translate(-50%,-80%) scale(1);
+    opacity: 1;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- NAV -->
+  <nav>
+    <div class="logo">Note<span>Quest</span></div>
+    <div class="nav-stats">
+      <div class="stat-pill xp"><span class="icon">⚡</span><span id="xpCount">0 XP</span></div>
+      <div class="stat-pill streak"><span class="icon">🔥</span><span id="streakCount">0</span></div>
+      <div class="stat-pill lives"><span class="icon">❤️</span><span id="livesCount">5</span></div>
+    </div>
+  </nav>
+
+  <main>
+    <!-- HOME SCREEN -->
+    <div id="homeScreen" class="screen active">
+      <div class="home-hero">
+        <div class="hero-badge">🎵 Learn Music Theory</div>
+        <h1 class="hero-title">Read Music<br><span class="highlight">Like a Pro</span></h1>
+        <p class="hero-sub">Master notes, scales, rhythms and key signatures through fast, addictive mini-games.</p>
+        <button class="btn-primary" onclick="showScreen('modesScreen')">Start Learning →</button>
+      </div>
+    </div>
+
+    <!-- MODES SCREEN -->
+    <div id="modesScreen" class="screen">
+      <div class="section-label">Choose Your Game</div>
+      <div class="mode-grid">
+        <div class="mode-card" data-color="purple" onclick="startGame('notes')">
+          <span class="mode-icon">🎼</span>
+          <div class="mode-title">Note Identification</div>
+          <div class="mode-desc">Identify notes on the treble clef staff. Build instant recognition.</div>
+          <span class="mode-level">⭐ Beginner</span>
+        </div>
+        <div class="mode-card" data-color="cyan" onclick="startGame('duration')">
+          <span class="mode-icon">🥁</span>
+          <div class="mode-title">Note Duration</div>
+          <div class="mode-desc">Match notes to their correct beat values. Whole, half, quarter and more.</div>
+          <span class="mode-level">⭐ Beginner</span>
+        </div>
+        <div class="mode-card" data-color="amber" onclick="startGame('keysig')">
+          <span class="mode-icon">🔑</span>
+          <div class="mode-title">Key Signatures</div>
+          <div class="mode-desc">Identify keys from their sharps and flats. Real musician skill.</div>
+          <span class="mode-level">⭐⭐ Intermediate</span>
+        </div>
+        <div class="mode-card mode-locked" data-color="green">
+          <span class="mode-icon">👂</span>
+          <div class="mode-title">Ear Training</div>
+          <div class="mode-desc">Match sounds to notes and scales. Coming soon.</div>
+          <span class="mode-level">⭐⭐⭐ Advanced · 🔒 Locked</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- GAME SCREEN -->
+    <div id="gameScreen" class="screen">
+      <div class="game-header">
+        <button class="btn-back" onclick="showScreen('modesScreen')">← Back</button>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar" id="progressBar" style="width:0%"></div>
+        </div>
+        <div class="q-counter" id="qCounter">1 / 10</div>
+      </div>
+
+      <div class="staff-card" id="staffCard">
+        <div class="question-label" id="questionLabel">What note is this?</div>
+        <canvas id="staffCanvas" width="500" height="160"></canvas>
+        <div class="hint-text" id="hintText">Treble Clef</div>
+      </div>
+
+      <div class="answer-grid" id="answerGrid"></div>
+
+      <div class="feedback" id="feedbackBanner">
+        <span class="feedback-icon" id="feedbackIcon"></span>
+        <div class="feedback-text">
+          <strong id="feedbackTitle"></strong>
+          <span id="feedbackSub"></span>
+        </div>
+      </div>
+
+      <button class="btn-next" id="btnNext" onclick="nextQuestion()">Continue →</button>
+    </div>
+
+    <!-- RESULTS SCREEN -->
+    <div id="resultsScreen" class="screen">
+      <div class="results-card">
+        <div class="results-emoji" id="resultsEmoji">🎉</div>
+        <div class="results-title" id="resultsTitle">Well Done!</div>
+        <div class="results-sub" id="resultsSub">You completed the lesson</div>
+        <div class="results-stats">
+          <div class="result-stat">
+            <div class="result-stat-val green" id="resCorrect">0</div>
+            <div class="result-stat-label">Correct</div>
+          </div>
+          <div class="result-stat">
+            <div class="result-stat-val purple" id="resXP">0</div>
+            <div class="result-stat-label">XP Earned</div>
+          </div>
+          <div class="result-stat">
+            <div class="result-stat-val amber" id="resAccuracy">0%</div>
+            <div class="result-stat-label">Accuracy</div>
+          </div>
+        </div>
+        <div class="results-actions">
+          <button class="btn-secondary" onclick="startGame(currentMode)">Play Again</button>
+          <button class="btn-primary" onclick="showScreen('modesScreen')">Other Games</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Toast & Streak pop -->
+<div class="toast" id="toast"></div>
+<div class="streak-pop" id="streakPop">🔥</div>
+
+<script>
+// ── GAME STATE ──────────────────────────────────────────────
+let xp = 0, streak = 0, lives = 5;
+let currentMode = '';
+let questions = [], currentQ = 0, score = 0;
+let answered = false;
+const TOTAL_Q = 10;
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function updateStats() {
+  document.getElementById('xpCount').textContent = xp + ' XP';
+  document.getElementById('streakCount').textContent = streak;
+  document.getElementById('livesCount').textContent = lives;
+}
+
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function showStreakPop() {
+  const p = document.getElementById('streakPop');
+  p.classList.add('show');
+  setTimeout(() => p.classList.remove('show'), 1200);
+}
+
+// ── NOTE IDENTIFICATION GAME ────────────────────────────────
+// Treble clef notes and their staff positions
+// position = distance from middle line (line 3), in half-steps
+// lines from bottom: E4, G4, B4, D5, F5
+// spaces from bottom: F4, A4, C5, E5
+// below: D4(ledger), C4(ledger)
+const TREBLE_NOTES = [
+  { name: 'C4', pos: -6, label: 'Middle C', ledger: true },
+  { name: 'D4', pos: -5 },
+  { name: 'E4', pos: -4 },
+  { name: 'F4', pos: -3 },
+  { name: 'G4', pos: -2 },
+  { name: 'A4', pos: -1 },
+  { name: 'B4', pos:  0 },
+  { name: 'C5', pos:  1 },
+  { name: 'D5', pos:  2 },
+  { name: 'E5', pos:  3 },
+  { name: 'F5', pos:  4 },
+  { name: 'G5', pos:  5 },
+];
+
+const NOTE_NAMES_SIMPLE = ['C','D','E','F','G','A','B'];
+
+// ── DURATION GAME DATA ──────────────────────────────────────
+const DURATIONS = [
+  { name: 'Whole Note',    symbol: '𝅝', beats: 4, desc: '4 beats — hold it all the way out', color: '#a78bfa' },
+  { name: 'Half Note',     symbol: '𝅗𝅥', beats: 2, desc: '2 beats — one and two', color: '#67e8f9' },
+  { name: 'Quarter Note',  symbol: '♩', beats: 1, desc: '1 beat — the basic pulse', color: '#fcd34d' },
+  { name: 'Eighth Note',   symbol: '♪', beats: 0.5, desc: 'Half a beat — quick!', color: '#6ee7b7' },
+  { name: 'Dotted Half',   symbol: '𝅗𝅥.', beats: 3, desc: '3 beats — half note + dot', color: '#f9a8d4' },
+];
+
+// ── KEY SIGNATURE GAME DATA ─────────────────────────────────
+const KEY_SIGS = [
+  { key: 'C Major',  sharps: 0, flats: 0, display: '∅ (no sharps or flats)' },
+  { key: 'G Major',  sharps: 1, flats: 0, display: '1 sharp (F#)' },
+  { key: 'D Major',  sharps: 2, flats: 0, display: '2 sharps (F#, C#)' },
+  { key: 'A Major',  sharps: 3, flats: 0, display: '3 sharps (F#, C#, G#)' },
+  { key: 'F Major',  sharps: 0, flats: 1, display: '1 flat (Bb)' },
+  { key: 'Bb Major', sharps: 0, flats: 2, display: '2 flats (Bb, Eb)' },
+  { key: 'Eb Major', sharps: 0, flats: 3, display: '3 flats (Bb, Eb, Ab)' },
+];
+
+// ── START GAME ──────────────────────────────────────────────
+function startGame(mode) {
+  currentMode = mode;
+  currentQ = 0;
+  score = 0;
+  answered = false;
+  questions = buildQuestions(mode);
+  showScreen('gameScreen');
+  loadQuestion();
+}
+
+function buildQuestions(mode) {
+  const qs = [];
+  for (let i = 0; i < TOTAL_Q; i++) {
+    if (mode === 'notes')    qs.push(makeNoteQ());
+    if (mode === 'duration') qs.push(makeDurationQ());
+    if (mode === 'keysig')   qs.push(makeKeySigQ());
+  }
+  return qs;
+}
+
+function makeNoteQ() {
+  const note = TREBLE_NOTES[Math.floor(Math.random() * TREBLE_NOTES.length)];
+  // Wrong options: other notes (just names)
+  const allNames = [...new Set(TREBLE_NOTES.map(n => n.name.replace(/\d/,'')))];
+  const wrongPool = allNames.filter(n => n !== note.name.replace(/\d/,''));
+  shuffle(wrongPool);
+  const wrongs = wrongPool.slice(0,3);
+  const opts = shuffle([note.name.replace(/\d/,''), ...wrongs]);
+  return { type: 'notes', note, answer: note.name.replace(/\d/,''), options: opts, hint: note.label || '' };
+}
+
+function makeDurationQ() {
+  const dur = DURATIONS[Math.floor(Math.random() * DURATIONS.length)];
+  const wrong = DURATIONS.filter(d => d.name !== dur.name);
+  shuffle(wrong);
+  const opts = shuffle([dur.name, ...wrong.slice(0,3).map(d => d.name)]);
+  return { type: 'duration', dur, answer: dur.name, options: opts };
+}
+
+function makeKeySigQ() {
+  const ks = KEY_SIGS[Math.floor(Math.random() * KEY_SIGS.length)];
+  const wrong = KEY_SIGS.filter(k => k.key !== ks.key);
+  shuffle(wrong);
+  const opts = shuffle([ks.key, ...wrong.slice(0,3).map(k => k.key)]);
+  return { type: 'keysig', ks, answer: ks.key, options: opts };
+}
+
+// ── LOAD QUESTION ───────────────────────────────────────────
+function loadQuestion() {
+  answered = false;
+  const q = questions[currentQ];
+
+  // Update progress
+  const pct = (currentQ / TOTAL_Q) * 100;
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('qCounter').textContent = (currentQ+1) + ' / ' + TOTAL_Q;
+
+  // Hide feedback/next
+  const fb = document.getElementById('feedbackBanner');
+  fb.className = 'feedback';
+  document.getElementById('btnNext').className = 'btn-next';
+
+  // Render question
+  if (q.type === 'notes')    renderNoteQ(q);
+  if (q.type === 'duration') renderDurationQ(q);
+  if (q.type === 'keysig')   renderKeySigQ(q);
+}
+
+function renderNoteQ(q) {
+  document.getElementById('questionLabel').textContent = 'What note is this?';
+  document.getElementById('hintText').textContent = 'Treble Clef' + (q.hint ? ' — ' + q.hint : '');
+  drawNote(q.note);
+  renderAnswerBtns(q.options, q.answer);
+}
+
+function renderDurationQ(q) {
+  document.getElementById('questionLabel').textContent = 'What is this note called?';
+  document.getElementById('hintText').textContent = q.dur.desc;
+  drawDuration(q.dur);
+  renderAnswerBtns(q.options, q.answer);
+}
+
+function renderKeySigQ(q) {
+  document.getElementById('questionLabel').textContent = 'Which key signature is this?';
+  document.getElementById('hintText').textContent = q.ks.display;
+  drawKeySig(q.ks);
+  renderAnswerBtns(q.options, q.answer);
+}
+
+// ── CANVAS DRAWING ──────────────────────────────────────────
+function drawNote(note) {
+  const canvas = document.getElementById('staffCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+
+  const staffTop = 45;
+  const lineGap = 16;
+  const midX = W / 2;
+
+  // Staff lines (5)
+  ctx.strokeStyle = '#3a3a60';
+  ctx.lineWidth = 1.5;
+  for (let i = 0; i < 5; i++) {
+    const y = staffTop + i * lineGap;
+    ctx.beginPath();
+    ctx.moveTo(80, y);
+    ctx.lineTo(W - 80, y);
+    ctx.stroke();
+  }
+
+  // Treble clef glyph (simplified SVG path approximation with text)
+  ctx.font = `${staffTop + lineGap * 4 + 10}px serif`;
+  ctx.fillStyle = '#6b7280';
+  ctx.textAlign = 'left';
+  ctx.fillText('𝄞', 82, staffTop + lineGap * 4 + 8);
+
+  // Calculate note Y position
+  // pos=0 => B4 = space below top line = staffTop + lineGap*0.5
+  // Each pos unit = half a line gap
+  // Lines (bottom to top): pos -4(E4), -2(G4), 0(B4), 2(D5), 4(F5)
+  // Spaces: -3(F4), -1(A4), 1(C5), 3(E5)
+  // Middle C (C4) pos=-6 → one ledger line below staff
+  const baseY = staffTop + lineGap * 2; // B4 (middle line) is pos=0
+  const noteY = baseY - (note.pos * lineGap / 2);
+
+  // Ledger lines if needed
+  if (note.pos <= -5) { // D4 or below
+    ctx.strokeStyle = '#4a4a70';
+    ctx.lineWidth = 1.5;
+    for (let lp = -4; lp >= note.pos; lp -= 2) {
+      const ly = baseY - (lp * lineGap / 2) + lineGap / 2;
+      // We need ledger at C4 position
+    }
+    // Ledger line for C4
+    if (note.pos === -6) {
+      const ly = baseY - (-6 * lineGap / 2);
+      ctx.beginPath();
+      ctx.moveTo(midX - 20, ly);
+      ctx.lineTo(midX + 20, ly);
+      ctx.stroke();
+    }
+  }
+
+  // Note head
+  const r = 8;
+  ctx.beginPath();
+  ctx.ellipse(midX, noteY, r * 1.3, r, -0.3, 0, Math.PI * 2);
+  ctx.fillStyle = '#7c3aed';
+  ctx.fill();
+  ctx.strokeStyle = '#a78bfa';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Stem
+  const stemDir = note.pos >= 0 ? -1 : 1; // up or down
+  ctx.beginPath();
+  ctx.moveTo(midX + (stemDir < 0 ? r*1.3 : -r*1.3), noteY);
+  ctx.lineTo(midX + (stemDir < 0 ? r*1.3 : -r*1.3), noteY - stemDir * lineGap * 3.5);
+  ctx.strokeStyle = '#7c3aed';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Glow
+  ctx.beginPath();
+  ctx.ellipse(midX, noteY, r*1.3, r, -0.3, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(124,58,237,0.18)';
+  ctx.fill();
+}
+
+function drawDuration(dur) {
+  const canvas = document.getElementById('staffCanvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Big symbol in center
+  ctx.font = 'bold 80px serif';
+  ctx.fillStyle = dur.color || '#a78bfa';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(dur.symbol, canvas.width/2, canvas.height/2);
+
+  // Beat count
+  ctx.font = '500 14px "DM Mono", monospace';
+  ctx.fillStyle = '#6b7280';
+  ctx.fillText(dur.beats + (dur.beats === 1 ? ' beat' : ' beats'), canvas.width/2, canvas.height - 18);
+}
+
+function drawKeySig(ks) {
+  const canvas = document.getElementById('staffCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+
+  const staffTop = 45, lineGap = 16;
+
+  // Staff lines
+  ctx.strokeStyle = '#3a3a60';
+  ctx.lineWidth = 1.5;
+  for (let i = 0; i < 5; i++) {
+    const y = staffTop + i * lineGap;
+    ctx.beginPath();
+    ctx.moveTo(80, y);
+    ctx.lineTo(W-80, y);
+    ctx.stroke();
+  }
+
+  // Treble clef
+  ctx.font = `${staffTop + lineGap*4+10}px serif`;
+  ctx.fillStyle = '#6b7280';
+  ctx.textAlign = 'left';
+  ctx.fillText('𝄞', 82, staffTop + lineGap*4+8);
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+
+  if (ks.sharps === 0 && ks.flats === 0) {
+    ctx.font = '600 14px "DM Mono", monospace';
+    ctx.fillStyle = '#4a4a70';
+    ctx.fillText('No sharps or flats', W/2, H - 16);
+    ctx.font = '900 32px serif';
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillText('C', W/2, H/2 + 8);
+  } else if (ks.sharps > 0) {
+    ctx.font = '900 28px serif';
+    ctx.fillStyle = '#f59e0b';
+    const sharpPositions = [staffTop, staffTop+lineGap*1.5, staffTop-lineGap*0.5,
+                            staffTop+lineGap*2, staffTop+lineGap*0.5];
+    for (let i = 0; i < ks.sharps; i++) {
+      ctx.fillText('♯', 190 + i * 26, sharpPositions[i % sharpPositions.length] + 6);
+    }
+  } else {
+    ctx.font = '900 28px serif';
+    ctx.fillStyle = '#67e8f9';
+    const flatPositions = [staffTop+lineGap*0.5, staffTop+lineGap*2, staffTop-lineGap*0.5,
+                           staffTop+lineGap*1.5, staffTop+lineGap*3];
+    for (let i = 0; i < ks.flats; i++) {
+      ctx.fillText('♭', 190 + i * 26, flatPositions[i % flatPositions.length] + 6);
+    }
+  }
+}
+
+// ── ANSWER BUTTONS ───────────────────────────────────────────
+function renderAnswerBtns(options, correctAnswer) {
+  const grid = document.getElementById('answerGrid');
+  grid.innerHTML = '';
+  options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'answer-btn';
+    btn.textContent = opt;
+    btn.onclick = () => checkAnswer(opt, correctAnswer, btn);
+    grid.appendChild(btn);
+  });
+}
+
+function checkAnswer(selected, correct, btn) {
+  if (answered) return;
+  answered = true;
+
+  const allBtns = document.querySelectorAll('.answer-btn');
+  allBtns.forEach(b => b.disabled = true);
+
+  const isCorrect = selected === correct;
+  const fb = document.getElementById('feedbackBanner');
+  const q = questions[currentQ];
+
+  if (isCorrect) {
+    btn.classList.add('correct');
+    score++;
+    xp += 10;
+    streak++;
+    fb.className = 'feedback correct show';
+    document.getElementById('feedbackIcon').textContent = '✅';
+    document.getElementById('feedbackTitle').textContent = 'Correct!';
+    document.getElementById('feedbackSub').textContent = getCorrectNote(q);
+    showToast('+10 XP ⚡', 'xp');
+    if (streak % 5 === 0) showStreakPop();
+  } else {
+    btn.classList.add('wrong');
+    // Highlight correct
+    allBtns.forEach(b => { if (b.textContent === correct) b.classList.add('correct'); });
+    if (lives > 0) lives--;
+    streak = 0;
+    fb.className = 'feedback wrong show';
+    document.getElementById('feedbackIcon').textContent = '❌';
+    document.getElementById('feedbackTitle').textContent = 'Not quite!';
+    document.getElementById('feedbackSub').textContent = 'The correct answer is: ' + correct;
+  }
+
+  updateStats();
+  document.getElementById('btnNext').className = 'btn-next show';
+}
+
+function getCorrectNote(q) {
+  if (q.type === 'notes')    return q.note.name + (q.hint ? ' (' + q.hint + ')' : '');
+  if (q.type === 'duration') return q.dur.desc;
+  if (q.type === 'keysig')   return q.ks.display;
+  return '';
+}
+
+function nextQuestion() {
+  currentQ++;
+  if (currentQ >= TOTAL_Q) {
+    showResults();
+  } else {
+    loadQuestion();
+  }
+}
+
+// ── RESULTS ─────────────────────────────────────────────────
+function showResults() {
+  const acc = Math.round((score / TOTAL_Q) * 100);
+  const earned = score * 10;
+
+  document.getElementById('resCorrect').textContent = score + '/' + TOTAL_Q;
+  document.getElementById('resXP').textContent = '+' + earned;
+  document.getElementById('resAccuracy').textContent = acc + '%';
+
+  if (acc === 100) {
+    document.getElementById('resultsEmoji').textContent = '🏆';
+    document.getElementById('resultsTitle').textContent = 'Perfect Score!';
+    document.getElementById('resultsSub').textContent = 'Absolutely flawless. You\'re on fire!';
+  } else if (acc >= 70) {
+    document.getElementById('resultsEmoji').textContent = '🎉';
+    document.getElementById('resultsTitle').textContent = 'Well Done!';
+    document.getElementById('resultsSub').textContent = 'Great session — keep practicing!';
+  } else {
+    document.getElementById('resultsEmoji').textContent = '💪';
+    document.getElementById('resultsTitle').textContent = 'Keep Going!';
+    document.getElementById('resultsSub').textContent = 'Practice makes perfect. Try again!';
+  }
+
+  showScreen('resultsScreen');
+}
+
+// ── UTILS ────────────────────────────────────────────────────
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i+1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// Init
+updateStats();
+</script>
+</body>
+</html>
