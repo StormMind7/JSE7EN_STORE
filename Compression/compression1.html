@@ -1,0 +1,1366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pro-C2 Compression Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --card: #1a1a26;
+    --border: #2a2a3a;
+    --accent: #e8b84b;
+    --accent2: #5b8cff;
+    --accent3: #ff5f6d;
+    --text: #e8e8f0;
+    --muted: #7a7a9a;
+    --green: #4ecb71;
+    --orange: #ff9a3c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* HEADER */
+  header {
+    background: linear-gradient(135deg, #0d0d1a 0%, #12121f 60%, #1a1020 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 40px 24px 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(232,184,75,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: -40px; left: 20%;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(91,140,255,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .header-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 4px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    opacity: 0.9;
+  }
+  h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(42px, 8vw, 80px);
+    line-height: 0.92;
+    letter-spacing: 2px;
+    color: var(--text);
+    margin-bottom: 12px;
+  }
+  h1 span { color: var(--accent); }
+  .subtitle {
+    font-size: 14px;
+    color: var(--muted);
+    font-weight: 300;
+    letter-spacing: 0.5px;
+    max-width: 500px;
+  }
+
+  /* CATEGORY TABS */
+  .tabs {
+    display: flex;
+    gap: 6px;
+    padding: 20px 24px 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    padding: 8px 16px;
+    border-radius: 6px 6px 0 0;
+    border: none;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: transparent;
+    color: var(--muted);
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); background: rgba(232,184,75,0.05); }
+
+  /* MAIN CONTENT */
+  .content { padding: 24px; max-width: 1100px; margin: 0 auto; }
+
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* INSTRUMENT CARD */
+  .instrument-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 20px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .instrument-card:hover { border-color: rgba(232,184,75,0.3); }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+  }
+  .card-icon {
+    font-size: 24px;
+    min-width: 36px;
+    text-align: center;
+  }
+  .card-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 1px;
+    color: var(--text);
+    flex: 1;
+  }
+  .card-mode {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    color: var(--accent);
+    background: rgba(232,184,75,0.1);
+    border: 1px solid rgba(232,184,75,0.2);
+  }
+  .card-toggle {
+    color: var(--muted);
+    font-size: 18px;
+    transition: transform 0.25s;
+  }
+  .card-header.open .card-toggle { transform: rotate(180deg); }
+
+  .card-body {
+    display: none;
+    padding: 22px;
+  }
+  .card-body.open { display: block; }
+
+  /* KNOB GRID */
+  .knob-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .knob-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    position: relative;
+  }
+  .knob-name {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .knob-value {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 26px;
+    letter-spacing: 1px;
+    color: var(--text);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .knob-value .unit {
+    font-size: 14px;
+    color: var(--muted);
+    margin-left: 2px;
+  }
+  .knob-desc {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.5;
+    font-weight: 300;
+  }
+
+  /* VISUAL BAR */
+  .knob-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 8px 0;
+    overflow: hidden;
+  }
+  .knob-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+  }
+
+  /* TIPS */
+  .tip-box {
+    background: rgba(91,140,255,0.07);
+    border: 1px solid rgba(91,140,255,0.2);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-top: 4px;
+  }
+  .tip-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--accent2);
+    margin-bottom: 6px;
+  }
+  .tip-text {
+    font-size: 12.5px;
+    color: #a0a8c8;
+    line-height: 1.65;
+    font-weight: 300;
+  }
+
+  /* SECTION INTRO */
+  .section-intro {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 14px 18px;
+    margin-bottom: 22px;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .section-intro strong { color: var(--text); font-weight: 500; }
+
+  /* LEGEND */
+  .legend {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+    padding: 14px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 11.5px;
+    color: var(--muted);
+  }
+  .legend-item { display: flex; align-items: center; gap: 7px; }
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+  }
+
+  /* KNOB CATEGORY COLORS */
+  .k-dynamics .knob-name { color: var(--accent3); }
+  .k-dynamics .knob-fill { background: linear-gradient(90deg, #ff5f6d88, var(--accent3)); }
+  .k-time .knob-name { color: var(--green); }
+  .k-time .knob-fill { background: linear-gradient(90deg, #2ecc7188, var(--green)); }
+  .k-shape .knob-name { color: var(--accent2); }
+  .k-shape .knob-fill { background: linear-gradient(90deg, #5b8cff88, var(--accent2)); }
+  .k-extra .knob-name { color: var(--orange); }
+  .k-extra .knob-fill { background: linear-gradient(90deg, #ff9a3c88, var(--orange)); }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .badge {
+    display: inline-block;
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1px;
+    padding: 2px 7px;
+    border-radius: 3px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+  .badge-hot { background: rgba(255,95,109,0.15); color: var(--accent3); border: 1px solid rgba(255,95,109,0.3); }
+  .badge-warm { background: rgba(255,154,60,0.15); color: var(--orange); border: 1px solid rgba(255,154,60,0.3); }
+  .badge-cool { background: rgba(91,140,255,0.15); color: var(--accent2); border: 1px solid rgba(91,140,255,0.3); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-label">FabFilter Pro-C2 · Complete Reference</div>
+  <h1>Compression<br><span>Bible</span></h1>
+  <p class="subtitle">Every knob, every instrument. Threshold to Dry/Wet — nothing left out.</p>
+</header>
+
+<div class="tabs" id="tabs">
+  <button class="tab active" data-section="drums">🥁 Drums</button>
+  <button class="tab" data-section="perc">🪘 Percussion</button>
+  <button class="tab" data-section="guitar">🎸 Guitar</button>
+  <button class="tab" data-section="strings">🎻 Strings</button>
+  <button class="tab" data-section="orch">🎼 Orchestra & Flute</button>
+  <button class="tab" data-section="saws">🎹 Synth Saws</button>
+  <button class="tab" data-section="legend">📖 Knob Guide</button>
+</div>
+
+<div class="content">
+
+<!-- ===== DRUMS ===== -->
+<div class="section active" id="drums">
+  <div class="section-intro">
+    Drums need <strong>transient control + punch preservation</strong>. The goal is to shape the hit without killing the snap. Kick and snare are treated separately — they have entirely different frequency centres and dynamic needs.
+  </div>
+
+  <!-- KICK -->
+  <div class="instrument-card">
+    <div class="card-header open" onclick="toggle(this)">
+      <div class="card-icon">🦵</div>
+      <div class="card-title">Kick Drum</div>
+      <div class="card-mode">PUNCH MODE</div>
+      <div class="card-toggle">▾</div>
+    </div>
+    <div class="card-body open">
+      <div class="knob-grid">
+        <div class="knob-item k-dynamics">
+          <div class="knob-name">Algorithm</div>
+          <div class="knob-value">Classic</div>
+          <div class="knob-desc">Classic mode gives the most transparent, punchy response — great for kick transients.</div>
+        </div>
+        <div class="knob-item k-dynamics">
+          <div class="knob-name">Threshold</div>
+          <div class="knob-value">−18 <span class="unit">dBFS</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:55%"></div></div>
+          <div class="knob-desc">Set so only peaks trigger compression. The transient snap of the beater stays untouched.</div>
+        </div>
+        <div class="knob-item k-dynamics">
+          <div class="knob-name">Ratio</div>
+          <div class="knob-value">4:1</div>
+          <div class="knob-bar"><div class="knob-fill" style="width:40%"></div></div>
+          <div class="knob-desc">Firm but not squashed. Tames the body without destroying impact.</div>
+        </div>
+        <div class="knob-item k-time">
+          <div class="knob-name">Attack</div>
+          <div class="knob-value">30 <span class="unit">ms</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:35%"></div></div>
+          <div class="knob-desc">Slow attack lets the initial transient click pass through before compression kicks in.</div>
+        </div>
+        <div class="knob-item k-time">
+          <div class="knob-name">Release</div>
+          <div class="knob-value">80 <span class="unit">ms</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:40%"></div></div>
+          <div class="knob-desc">Fast enough to recover before the next hit. Keeps the groove breathing.</div>
+        </div>
+        <div class="knob-item k-shape">
+          <div class="knob-name">Knee</div>
+          <div class="knob-value">Medium</div>
+          <div class="knob-bar"><div class="knob-fill" style="width:50%"></div></div>
+          <div class="knob-desc">Smooth transition into compression — avoids hard clamping on the low-end thump.</div>
+        </div>
+        <div class="knob-item k-shape">
+          <div class="knob-name">Lookahead</div>
+          <div class="knob-value">1.5 <span class="unit">ms</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:15%"></div></div>
+          <div class="knob-desc">Helps the compressor anticipate the hit. Reduces clipping on hard transients.</div>
+        </div>
+        <div class="knob-item k-extra">
+          <div class="knob-name">Gain (Output)</div>
+          <div class="knob-value">+3 <span class="unit">dB</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:55%"></div></div>
+          <div class="knob-desc">Make-up gain to restore loudness after gain reduction. Match the uncompressed level.</div>
+        </div>
+        <div class="knob-item k-extra">
+          <div class="knob-name">Dry/Wet</div>
+          <div class="knob-value">80 <span class="unit">%</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:80%"></div></div>
+          <div class="knob-desc">Parallel blend. 20% dry signal reintroduces natural transient snap if overcompressed.</div>
+        </div>
+        <div class="knob-item k-extra">
+          <div class="knob-name">Gain Reduction</div>
+          <div class="knob-value">−4 to −6 <span class="unit">dB</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:50%"></div></div>
+          <div class="knob-desc">Target. Watch the GR meter — any more than −8dB starts to kill the punch.</div>
+        </div>
+      </div>
+      <div class="tip-box">
+        <div class="tip-label">💡 Pro Tip</div>
+        <div class="tip-text">Enable the <strong>SC EQ (Sidechain EQ)</strong> button inside Pro-C2. High-pass the sidechain at ~80Hz so subsonic rumble doesn't trigger false compression. Also try the <strong>Hold</strong> knob at 20ms to lock the compressor open slightly after each hit — this creates a bigger "bloom" on the body of the kick.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SNARE -->
+  <div class="instrument-card">
+    <div class="card-header" onclick="toggle(this)">
+      <div class="card-icon">🥁</div>
+      <div class="card-title">Snare Drum</div>
+      <div class="card-mode">SNAP MODE</div>
+      <div class="card-toggle">▾</div>
+    </div>
+    <div class="card-body">
+      <div class="knob-grid">
+        <div class="knob-item k-dynamics">
+          <div class="knob-name">Algorithm</div>
+          <div class="knob-value">Clean</div>
+          <div class="knob-desc">Clean mode is linear-phase and precise — perfect for a modern snare that needs clarity.</div>
+        </div>
+        <div class="knob-item k-dynamics">
+          <div class="knob-name">Threshold</div>
+          <div class="knob-value">−14 <span class="unit">dBFS</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:60%"></div></div>
+          <div class="knob-desc">Snares hit hard. Set threshold so main hits compress but ghost notes pass through.</div>
+        </div>
+        <div class="knob-item k-dynamics">
+          <div class="knob-name">Ratio</div>
+          <div class="knob-value">5:1</div>
+          <div class="knob-bar"><div class="knob-fill" style="width:45%"></div></div>
+          <div class="knob-desc">Keeps hard hits controlled and consistent in the mix.</div>
+        </div>
+        <div class="knob-item k-time">
+          <div class="knob-name">Attack</div>
+          <div class="knob-value">8 <span class="unit">ms</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:22%"></div></div>
+          <div class="knob-desc">Faster attack than kick — snare's "crack" is in the first milliseconds. Don't be too slow.</div>
+        </div>
+        <div class="knob-item k-time">
+          <div class="knob-name">Release</div>
+          <div class="knob-value">120 <span class="unit">ms</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:48%"></div></div>
+          <div class="knob-desc">Longer release lets the snare tail breathe and ring naturally.</div>
+        </div>
+        <div class="knob-item k-shape">
+          <div class="knob-name">Knee</div>
+          <div class="knob-value">Hard–Medium</div>
+          <div class="knob-bar"><div class="knob-fill" style="width:35%"></div></div>
+          <div class="knob-desc">Tighter knee brings that modern punchy snare feel.</div>
+        </div>
+        <div class="knob-item k-shape">
+          <div class="knob-name">Lookahead</div>
+          <div class="knob-value">0.5 <span class="unit">ms</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:8%"></div></div>
+          <div class="knob-desc">Very small — just enough to catch the transient peak cleanly.</div>
+        </div>
+        <div class="knob-item k-extra">
+          <div class="knob-name">Gain (Output)</div>
+          <div class="knob-value">+4 <span class="unit">dB</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:58%"></div></div>
+          <div class="knob-desc">Push back the compressed signal to sit in the mix properly.</div>
+        </div>
+        <div class="knob-item k-extra">
+          <div class="knob-name">SC High-Pass</div>
+          <div class="knob-value">200 <span class="unit">Hz</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:30%"></div></div>
+          <div class="knob-desc">Filter the sidechain so low-end bleed from kick doesn't trigger the snare compressor.</div>
+        </div>
+        <div class="knob-item k-extra">
+          <div class="knob-name">Dry/Wet</div>
+          <div class="knob-value">100 <span class="unit">%</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:100%"></div></div>
+          <div class="knob-desc">Full wet for snare — you want complete control over the dynamics.</div>
+        </div>
+      </div>
+      <div class="tip-box">
+        <div class="tip-label">💡 Pro Tip</div>
+        <div class="tip-text">Try Pro-C2's <strong>Opto</strong> algorithm for a vintage snare. The Opto mode has a nonlinear release that sounds organic — great for live drum recordings. Also, set the <strong>Stereo Link</strong> to around 60–70% if you're compressing a stereo snare (with room mic blended). This prevents the image from narrowing too much on loud hits.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HI-HAT -->
+  <div class="instrument-card">
+    <div class="card-header" onclick="toggle(this)">
+      <div class="card-icon">🔔</div>
+      <div class="card-title">Hi-Hat</div>
+      <div class="card-mode">AIR MODE</div>
+      <div class="card-toggle">▾</div>
+    </div>
+    <div class="card-body">
+      <div class="knob-grid">
+        <div class="knob-item k-dynamics">
+          <div class="knob-name">Algorithm</div>
+          <div class="knob-value">Clean</div>
+          <div class="knob-desc">Transparent. You don't want coloration on hats — they live in the high-frequency air.</div>
+        </div>
+        <div class="knob-item k-dynamics">
+          <div class="knob-name">Threshold</div>
+          <div class="knob-value">−10 <span class="unit">dBFS</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:68%"></div></div>
+          <div class="knob-desc">High threshold — only tame the loudest open hi-hat hits. Let closed hats be free.</div>
+        </div>
+        <div class="knob-item k-dynamics">
+          <div class="knob-name">Ratio</div>
+          <div class="knob-value">2:1</div>
+          <div class="knob-bar"><div class="knob-fill" style="width:20%"></div></div>
+          <div class="knob-desc">Very gentle. Hi-hats are dynamic by nature — over-compressing kills their shimmer.</div>
+        </div>
+        <div class="knob-item k-time">
+          <div class="knob-name">Attack</div>
+          <div class="knob-value">5 <span class="unit">ms</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:18%"></div></div>
+          <div class="knob-desc">Quick enough to catch the metallic edge but not so fast it eats the sparkle.</div>
+        </div>
+        <div class="knob-item k-time">
+          <div class="knob-name">Release</div>
+          <div class="knob-value">60 <span class="unit">ms</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:30%"></div></div>
+          <div class="knob-desc">Short release keeps the groove tight. Don't let it linger.</div>
+        </div>
+        <div class="knob-item k-shape">
+          <div class="knob-name">Knee</div>
+          <div class="knob-value">Soft</div>
+          <div class="knob-bar"><div class="knob-fill" style="width:70%"></div></div>
+          <div class="knob-desc">Gradual knee makes compression nearly invisible — which is exactly what you want.</div>
+        </div>
+        <div class="knob-item k-extra">
+          <div class="knob-name">Gain (Output)</div>
+          <div class="knob-value">+1.5 <span class="unit">dB</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:42%"></div></div>
+          <div class="knob-desc">Minimal make-up. Hi-hats shouldn't be loud — just consistent.</div>
+        </div>
+        <div class="knob-item k-extra">
+          <div class="knob-name">SC High-Pass</div>
+          <div class="knob-value">5 <span class="unit">kHz</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:72%"></div></div>
+          <div class="knob-desc">Extreme HPF on sidechain — only the high-end of the hat itself triggers compression.</div>
+        </div>
+        <div class="knob-item k-extra">
+          <div class="knob-name">Stereo Link</div>
+          <div class="knob-value">100 <span class="unit">%</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:100%"></div></div>
+          <div class="knob-desc">Full stereo link. Keeps panned hats balanced.</div>
+        </div>
+      </div>
+      <div class="tip-box">
+        <div class="tip-label">💡 Pro Tip</div>
+        <div class="tip-text">For hi-hats, less is more. The main goal of the compressor here is <strong>evening out dynamics</strong> between open and closed patterns — not squashing. Use the <strong>GR meter</strong> to make sure you're seeing no more than −2 to −3dB of gain reduction. Anything more will make hats sound dull and lifeless.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PERCUSSION ===== -->
+<div class="section" id="perc">
+  <div class="section-intro">
+    <strong>Precision percussion</strong> (shakers, claps, tambourine, congas, etc.) needs tight transient shaping. The goal is consistency across a performance — each hit should feel equally weighted in the mix.
+  </div>
+
+  <div class="instrument-card">
+    <div class="card-header" onclick="toggle(this)">
+      <div class="card-icon">🪘</div>
+      <div class="card-title">Precision Percussion</div>
+      <div class="card-mode">TRANSIENT MODE</div>
+      <div class="card-toggle">▾</div>
+    </div>
+    <div class="card-body">
+      <div class="knob-grid">
+        <div class="knob-item k-dynamics">
+          <div class="knob-name">Algorithm</div>
+          <div class="knob-value">Classic</div>
+          <div class="knob-desc">Classic has the most musical knee behaviour — good for live percussion with real dynamics.</div>
+        </div>
+        <div class="knob-item k-dynamics">
+          <div class="knob-name">Threshold</div>
+          <div class="knob-value">−16 <span class="unit">dBFS</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:57%"></div></div>
+          <div class="knob-desc">Medium threshold to catch velocity inconsistencies while preserving feel.</div>
+        </div>
+        <div class="knob-item k-dynamics">
+          <div class="knob-name">Ratio</div>
+          <div class="knob-value">3:1</div>
+          <div class="knob-bar"><div class="knob-fill" style="width:28%"></div></div>
+          <div class="knob-desc">Moderate ratio — tightens without robotics. Percussion needs to feel human.</div>
+        </div>
+        <div class="knob-item k-time">
+          <div class="knob-name">Attack</div>
+          <div class="knob-value">12 <span class="unit">ms</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:25%"></div></div>
+          <div class="knob-desc">Medium-fast. Let the click of the hit pass, then compress the body.</div>
+        </div>
+        <div class="knob-item k-time">
+          <div class="knob-name">Release</div>
+          <div class="knob-value">Auto</div>
+          <div class="knob-bar"><div class="knob-fill" style="width:60%"></div></div>
+          <div class="knob-desc">Use Auto Release — Pro-C2's algorithm adapts to the tempo of the hit pattern intelligently.</div>
+        </div>
+        <div class="knob-item k-shape">
+          <div class="knob-name">Knee</div>
+          <div class="knob-value">Medium</div>
+          <div class="knob-bar"><div class="knob-fill" style="width:50%"></div></div>
+          <div class="knob-desc">Balanced knee for a natural, musical compression curve.</div>
+        </div>
+        <div class="knob-item k-shape">
+          <div class="knob-name">Hold</div>
+          <div class="knob-value">10 <span class="unit">ms</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:20%"></div></div>
+          <div class="knob-desc">Brief hold prevents pumping between fast hits like shaker 16ths.</div>
+        </div>
+        <div class="knob-item k-shape">
+          <div class="knob-name">Lookahead</div>
+          <div class="knob-value">1 <span class="unit">ms</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:12%"></div></div>
+          <div class="knob-desc">Small lookahead to catch sharp transients before they clip.</div>
+        </div>
+        <div class="knob-item k-extra">
+          <div class="knob-name">Gain (Output)</div>
+          <div class="knob-value">+3 <span class="unit">dB</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:55%"></div></div>
+          <div class="knob-desc">Push compressed signal back up to desired level in mix.</div>
+        </div>
+        <div class="knob-item k-extra">
+          <div class="knob-name">Dry/Wet</div>
+          <div class="knob-value">90 <span class="unit">%</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:90%"></div></div>
+          <div class="knob-desc">Mostly wet but a touch of dry helps retain performance dynamics.</div>
+        </div>
+      </div>
+      <div class="tip-box">
+        <div class="tip-label">💡 Pro Tip</div>
+        <div class="tip-text">For <strong>shakers and tambourines</strong>, drop the ratio to 2:1 and use a soft knee — these instruments need their jingle to breathe. For <strong>congas and bongos</strong>, you can push to 4:1 with a faster attack (5ms) to tighten up hand performance inconsistencies. Always check in context of the full mix — percussion compressors that sound great solo often disappear in a mix.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== GUITAR ===== -->
+<div class="section" id="guitar">
+  <div class="section-intro">
+    Guitar compression is about <strong>sustain, presence, and consistency</strong>. Rhythm guitar needs glue and even strumming. Lead guitar needs sustain and sitting in the mix. These are very different compression tasks.
+  </div>
+
+  <div class="instrument-card">
+    <div class="card-header open" onclick="toggle(this)">
+      <div class="card-icon">🎸</div>
+      <div class="card-title">Acoustic / Rhythm Guitar</div>
+      <div class="card-mode">GLUE MODE</div>
+      <div class="card-toggle">▾</div>
+    </div>
+    <div class="card-body open">
+      <div class="knob-grid">
+        <div class="knob-item k-dynamics">
+          <div class="knob-name">Algorithm</div>
+          <div class="knob-value">Opto</div>
+          <div class="knob-desc">Opto's nonlinear release sounds warm and musical on acoustic guitars — vintage vibe.</div>
+        </div>
+        <div class="knob-item k-dynamics">
+          <div class="knob-name">Threshold</div>
+          <div class="knob-value">−20 <span class="unit">dBFS</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:50%"></div></div>
+          <div class="knob-desc">Lower threshold catches the full strumming pattern for even dynamics.</div>
+        </div>
+        <div class="knob-item k-dynamics">
+          <div class="knob-name">Ratio</div>
+          <div class="knob-value">3:1</div>
+          <div class="knob-bar"><div class="knob-fill" style="width:28%"></div></div>
+          <div class="knob-desc">Gentle ratio — acoustic guitar has natural expression that you want to preserve.</div>
+        </div>
+        <div class="knob-item k-time">
+          <div class="knob-name">Attack</div>
+          <div class="knob-value">25 <span class="unit">ms</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:30%"></div></div>
+          <div class="knob-desc">Lets the pick attack come through before compression — keeps the strumming bright.</div>
+        </div>
+        <div class="knob-item k-time">
+          <div class="knob-name">Release</div>
+          <div class="knob-value">Auto</div>
+          <div class="knob-bar"><div class="knob-fill" style="width:60%"></div></div>
+          <div class="knob-desc">Auto-release adapts to tempo. Prevents pumping on strummed chord patterns.</div>
+        </div>
+        <div class="knob-item k-shape">
+          <div class="knob-name">Knee</div>
+          <div class="knob-value">Soft</div>
+          <div class="knob-bar"><div class="knob-fill" style="width:75%"></div></div>
+          <div class="knob-desc">Very gradual knee. Acoustic guitar needs compression to be invisible.</div>
+        </div>
+        <div class="knob-item k-extra">
+          <div class="knob-name">Gain (Output)</div>
+          <div class="knob-value">+2.5 <span class="unit">dB</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:52%"></div></div>
+          <div class="knob-desc">Modest make-up. Keep guitar from sitting too loud in the mix.</div>
+        </div>
+        <div class="knob-item k-extra">
+          <div class="knob-name">Stereo Link</div>
+          <div class="knob-value">80 <span class="unit">%</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:80%"></div></div>
+          <div class="knob-desc">High stereo link for stereo-mic'd acoustic — maintains the natural width.</div>
+        </div>
+        <div class="knob-item k-extra">
+          <div class="knob-name">Dry/Wet</div>
+          <div class="knob-value">75 <span class="unit">%</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:75%"></div></div>
+          <div class="knob-desc">Parallel blend. 25% dry restores pick dynamics that compression may dull.</div>
+        </div>
+      </div>
+      <div class="tip-box">
+        <div class="tip-label">💡 Pro Tip</div>
+        <div class="tip-text">For <strong>electric rhythm guitar</strong>, switch to the <strong>Classic</strong> algorithm and push ratio to 4:1 with a faster attack (10ms). This glues hard strums. For <strong>lead guitar</strong>, use <strong>Vocal</strong> algorithm at 2:1 with a slow attack (40ms) and long release (300ms) — this fattens sustain without clamping the notes. Use <strong>SC EQ</strong> to cut around 250Hz so boxy low-mids don't over-trigger the compressor.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== STRINGS ===== -->
+<div class="section" id="strings">
+  <div class="section-intro">
+    Strings are the most <strong>dynamically complex</strong> instruments in an arrangement. Violin, viola, cello — each has a vastly different frequency range and dynamic envelope. The goal is transparency: compression should <em>never</em> be heard, only felt.
+  </div>
+
+  <div class="instrument-card">
+    <div class="card-header open" onclick="toggle(this)">
+      <div class="card-icon">🎻</div>
+      <div class="card-title">Violin</div>
+      <div class="card-mode">AIR & PRESENCE</div>
+      <div class="card-toggle">▾</div>
+    </div>
+    <div class="card-body open">
+      <div class="knob-grid">
+        <div class="knob-item k-dynamics">
+          <div class="knob-name">Algorithm</div>
+          <div class="knob-value">Clean</div>
+          <div class="knob-desc">Linear phase. Violin's upper harmonics are delicate — Clean preserves them perfectly.</div>
+        </div>
+        <div class="knob-item k-dynamics">
+          <div class="knob-name">Threshold</div>
+          <div class="knob-value">−24 <span class="unit">dBFS</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:44%"></div></div>
+          <div class="knob-desc">Low threshold for consistent engagement. Violin performances have extreme dynamic range.</div>
+        </div>
+        <div class="knob-item k-dynamics">
+          <div class="knob-name">Ratio</div>
+          <div class="knob-value">1.5:1</div>
+          <div class="knob-bar"><div class="knob-fill" style="width:12%"></div></div>
+          <div class="knob-desc">Very light ratio. Barely touching it. The goal is levelling, not squashing.</div>
+        </div>
+        <div class="knob-item k-time">
+          <div class="knob-name">Attack</div>
+          <div class="knob-value">50 <span class="unit">ms</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:40%"></div></div>
+          <div class="knob-desc">Slow attack preserves the bow attack (articulation) of each note.</div>
+        </div>
+        <div class="knob-item k-time">
+          <div class="knob-name">Release</div>
+          <div class="knob-value">300 <span class="unit">ms</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:65%"></div></div>
+          <div class="knob-desc">Long release follows the natural sustain envelope of bowed strings.</div>
+        </div>
+        <div class="knob-item k-shape">
+          <div class="knob-name">Knee</div>
+          <div class="knob-value">Very Soft</div>
+          <div class="knob-bar"><div class="knob-fill" style="width:85%"></div></div>
+          <div class="knob-desc">The softest knee makes the compression curve nearly invisible.</div>
+        </div>
+        <div class="knob-item k-shape">
+          <div class="knob-name">Lookahead</div>
+          <div class="knob-value">3 <span class="unit">ms</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:22%"></div></div>
+          <div class="knob-desc">Gives the compressor time to react smoothly to bow changes and dynamic swells.</div>
+        </div>
+        <div class="knob-item k-extra">
+          <div class="knob-name">Gain (Output)</div>
+          <div class="knob-value">+2 <span class="unit">dB</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:50%"></div></div>
+          <div class="knob-desc">Light make-up gain — strings usually don't need to be pushed hard.</div>
+        </div>
+        <div class="knob-item k-extra">
+          <div class="knob-name">Dry/Wet</div>
+          <div class="knob-value">60 <span class="unit">%</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:60%"></div></div>
+          <div class="knob-desc">40% dry blend maintains the natural expression and air of the performance.</div>
+        </div>
+      </div>
+      <div class="tip-box">
+        <div class="tip-label">💡 Pro Tip</div>
+        <div class="tip-text">For solo violin, use the <strong>Vocal algorithm</strong> instead — it handles complex harmonic content very musically. With an ensemble violin section, compress the bus lightly to "glue" the section: ratio 2:1, slow attack 60ms, medium release 200ms, soft knee. The <strong>SC EQ</strong> notch around 2–4kHz can stop harsh bow noise from over-triggering.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="instrument-card">
+    <div class="card-header" onclick="toggle(this)">
+      <div class="card-icon">🎻</div>
+      <div class="card-title">Cello</div>
+      <div class="card-mode">WARMTH & BODY</div>
+      <div class="card-toggle">▾</div>
+    </div>
+    <div class="card-body">
+      <div class="knob-grid">
+        <div class="knob-item k-dynamics">
+          <div class="knob-name">Algorithm</div>
+          <div class="knob-value">Opto / Classic</div>
+          <div class="knob-desc">Opto for warm, vintage tone. Classic for a more modern, transparent cello sound.</div>
+        </div>
+        <div class="knob-item k-dynamics">
+          <div class="knob-name">Threshold</div>
+          <div class="knob-value">−22 <span class="unit">dBFS</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:47%"></div></div>
+          <div class="knob-desc">Cello has big dynamic range. Catch the whole performance.</div>
+        </div>
+        <div class="knob-item k-dynamics">
+          <div class="knob-name">Ratio</div>
+          <div class="knob-value">2:1</div>
+          <div class="knob-bar"><div class="knob-fill" style="width:18%"></div></div>
+          <div class="knob-desc">Gentle. Preserve the cello's majestic dynamic range — don't flatten it.</div>
+        </div>
+        <div class="knob-item k-time">
+          <div class="knob-name">Attack</div>
+          <div class="knob-value">60 <span class="unit">ms</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:42%"></div></div>
+          <div class="knob-desc">Slow — lets the bow dig in on each note before the compressor engages.</div>
+        </div>
+        <div class="knob-item k-time">
+          <div class="knob-name">Release</div>
+          <div class="knob-value">400 <span class="unit">ms</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:72%"></div></div>
+          <div class="knob-desc">Very long release — cello notes sustain for a long time, especially in legato passages.</div>
+        </div>
+        <div class="knob-item k-shape">
+          <div class="knob-name">Knee</div>
+          <div class="knob-value">Soft</div>
+          <div class="knob-bar"><div class="knob-fill" style="width:75%"></div></div>
+          <div class="knob-desc">Soft knee for smooth, organic-feeling compression on the low-mid-rich cello body.</div>
+        </div>
+        <div class="knob-item k-extra">
+          <div class="knob-name">SC High-Pass</div>
+          <div class="knob-value">80 <span class="unit">Hz</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:25%"></div></div>
+          <div class="knob-desc">Filter out sub-bass from the sidechain — room rumble shouldn't trigger the compressor.</div>
+        </div>
+        <div class="knob-item k-extra">
+          <div class="knob-name">Gain (Output)</div>
+          <div class="knob-value">+2.5 <span class="unit">dB</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:52%"></div></div>
+          <div class="knob-desc">Moderate make-up. Push the cello to sit warmly under the violins.</div>
+        </div>
+        <div class="knob-item k-extra">
+          <div class="knob-name">Dry/Wet</div>
+          <div class="knob-value">70 <span class="unit">%</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:70%"></div></div>
+          <div class="knob-desc">30% dry blend retains natural resonance and vibrato expressiveness.</div>
+        </div>
+      </div>
+      <div class="tip-box">
+        <div class="tip-label">💡 Pro Tip</div>
+        <div class="tip-text">The cello's richest body is between 150–400Hz. Use the <strong>SC EQ</strong> to slightly boost this range in the sidechain so the compressor is most sensitive where the cello is most powerful. This creates "musical" pumping that follows the natural phrasing of the instrument rather than reacting to the wrong frequencies.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ORCHESTRA & FLUTE ===== -->
+<div class="section" id="orch">
+  <div class="section-intro">
+    Orchestral instruments and flute are about <strong>dynamic shaping without dynamics removal</strong>. An orchestra's power comes from its dynamic range — compression here is surgical and subtle. Bus compression is often more appropriate than individual channel compression.
+  </div>
+
+  <div class="instrument-card">
+    <div class="card-header open" onclick="toggle(this)">
+      <div class="card-icon">🎼</div>
+      <div class="card-title">Orchestra Bus</div>
+      <div class="card-mode">GLUE & CONTROL</div>
+      <div class="card-toggle">▾</div>
+    </div>
+    <div class="card-body open">
+      <div class="knob-grid">
+        <div class="knob-item k-dynamics">
+          <div class="knob-name">Algorithm</div>
+          <div class="knob-value">Bus</div>
+          <div class="knob-desc">Bus algorithm is purpose-built for mix bus glue. Perfect for stitching orchestral sections.</div>
+        </div>
+        <div class="knob-item k-dynamics">
+          <div class="knob-name">Threshold</div>
+          <div class="knob-value">−18 <span class="unit">dBFS</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:55%"></div></div>
+          <div class="knob-desc">Set so the compressor breathes with the orchestra — engaged during fortissimo, released during pianissimo.</div>
+        </div>
+        <div class="knob-item k-dynamics">
+          <div class="knob-name">Ratio</div>
+          <div class="knob-value">1.5:1</div>
+          <div class="knob-bar"><div class="knob-fill" style="width:12%"></div></div>
+          <div class="knob-desc">Ultra-gentle. Orchestra dynamics are precious — don't squash them.</div>
+        </div>
+        <div class="knob-item k-time">
+          <div class="knob-name">Attack</div>
+          <div class="knob-value">80 <span class="unit">ms</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:48%"></div></div>
+          <div class="knob-desc">Very slow — lets orchestral swells and crescendos develop naturally before limiting them.</div>
+        </div>
+        <div class="knob-item k-time">
+          <div class="knob-name">Release</div>
+          <div class="knob-value">500 <span class="unit">ms</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:78%"></div></div>
+          <div class="knob-desc">Long, smooth release follows the decay of orchestral phrases and reverb tails.</div>
+        </div>
+        <div class="knob-item k-shape">
+          <div class="knob-name">Knee</div>
+          <div class="knob-value">Very Soft</div>
+          <div class="knob-bar"><div class="knob-fill" style="width:90%"></div></div>
+          <div class="knob-desc">Maximum softness. The transition into compression must be completely imperceptible.</div>
+        </div>
+        <div class="knob-item k-shape">
+          <div class="knob-name">Lookahead</div>
+          <div class="knob-value">5 <span class="unit">ms</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:30%"></div></div>
+          <div class="knob-desc">Gives the compressor time to anticipate forte passages and engage gently ahead of them.</div>
+        </div>
+        <div class="knob-item k-extra">
+          <div class="knob-name">Stereo Link</div>
+          <div class="knob-value">100 <span class="unit">%</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:100%"></div></div>
+          <div class="knob-desc">Full link. Orchestra panning must remain stable — unlinked compression shifts the image.</div>
+        </div>
+        <div class="knob-item k-extra">
+          <div class="knob-name">Gain (Output)</div>
+          <div class="knob-value">+1 <span class="unit">dB</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:42%"></div></div>
+          <div class="knob-desc">Minimal make-up. Orchestra shouldn't be artificially loud — maintain relative dynamics.</div>
+        </div>
+        <div class="knob-item k-extra">
+          <div class="knob-name">GR Target</div>
+          <div class="knob-value">−1 to −2 <span class="unit">dB</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:20%"></div></div>
+          <div class="knob-desc">Only 1–2dB of gain reduction. Any more destroys the illusion of a live orchestra.</div>
+        </div>
+      </div>
+      <div class="tip-box">
+        <div class="tip-label">💡 Pro Tip</div>
+        <div class="tip-text">For orchestral production, consider using Pro-C2 in <strong>M/S (Mid-Side) mode</strong>. Compress the Mid channel slightly more than the Sides — this tightens the centre (where the conductor's section sits) while leaving the outer orchestral spread (Side) completely natural and airy. Ratio: Mid 2:1 / Side 1.2:1.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="instrument-card">
+    <div class="card-header" onclick="toggle(this)">
+      <div class="card-icon">🪈</div>
+      <div class="card-title">Flute</div>
+      <div class="card-mode">BREATH & CLARITY</div>
+      <div class="card-toggle">▾</div>
+    </div>
+    <div class="card-body">
+      <div class="knob-grid">
+        <div class="knob-item k-dynamics">
+          <div class="knob-name">Algorithm</div>
+          <div class="knob-value">Vocal</div>
+          <div class="knob-desc">Vocal mode handles breath-driven instruments beautifully — tracks the envelope naturally.</div>
+        </div>
+        <div class="knob-item k-dynamics">
+          <div class="knob-name">Threshold</div>
+          <div class="knob-value">−26 <span class="unit">dBFS</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:40%"></div></div>
+          <div class="knob-desc">Flute can be very quiet in the lower register. Low threshold catches the full range.</div>
+        </div>
+        <div class="knob-item k-dynamics">
+          <div class="knob-name">Ratio</div>
+          <div class="knob-value">2:1</div>
+          <div class="knob-bar"><div class="knob-fill" style="width:18%"></div></div>
+          <div class="knob-desc">Light compression to even out register changes (low-to-high dramatic dynamic differences).</div>
+        </div>
+        <div class="knob-item k-time">
+          <div class="knob-name">Attack</div>
+          <div class="knob-value">40 <span class="unit">ms</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:38%"></div></div>
+          <div class="knob-desc">Moderate-slow. Lets the airy onset of each note breathe before compression engages.</div>
+        </div>
+        <div class="knob-item k-time">
+          <div class="knob-name">Release</div>
+          <div class="knob-value">250 <span class="unit">ms</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:58%"></div></div>
+          <div class="knob-desc">Long enough to follow phrase tails without pumping between notes.</div>
+        </div>
+        <div class="knob-item k-shape">
+          <div class="knob-name">Knee</div>
+          <div class="knob-value">Soft</div>
+          <div class="knob-bar"><div class="knob-fill" style="width:80%"></div></div>
+          <div class="knob-desc">Soft knee — transparency is critical for delicate flute tone.</div>
+        </div>
+        <div class="knob-item k-extra">
+          <div class="knob-name">SC HP Filter</div>
+          <div class="knob-value">300 <span class="unit">Hz</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:38%"></div></div>
+          <div class="knob-desc">High-pass sidechain to prevent room noise and breath pops from triggering compression.</div>
+        </div>
+        <div class="knob-item k-extra">
+          <div class="knob-name">Dry/Wet</div>
+          <div class="knob-value">65 <span class="unit">%</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:65%"></div></div>
+          <div class="knob-desc">35% dry preserves flute's natural air and the characteristic breath in the tone.</div>
+        </div>
+      </div>
+      <div class="tip-box">
+        <div class="tip-label">💡 Pro Tip</div>
+        <div class="tip-text">Flute has a unique issue: <strong>breath noise</strong>. Use the sidechain HPF at 300–500Hz so breath pops don't trigger the compressor falsely. Also, if the flute is in a high register (above 1kHz primarily), reduce ratio to 1.5:1 — high notes are naturally louder, and over-compressing makes them sound pinched and unnatural.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SYNTH SAWS ===== -->
+<div class="section" id="saws">
+  <div class="section-intro">
+    Synth saws are <strong>harmonically dense and sustain-heavy</strong>. They don't have transients like drums — they have density and harmonic texture. Compression here is about <strong>controlling harmonic energy</strong>, managing low-end power (Low Saws), balancing presence (Mid Saws), and controlling harshness (High Saws).
+  </div>
+
+  <div class="instrument-card">
+    <div class="card-header open" onclick="toggle(this)">
+      <div class="card-icon">🔴</div>
+      <div class="card-title">High Saws <span class="badge badge-hot">BRIGHT</span></div>
+      <div class="card-mode">TAME HARSHNESS</div>
+      <div class="card-toggle">▾</div>
+    </div>
+    <div class="card-body open">
+      <div class="knob-grid">
+        <div class="knob-item k-dynamics">
+          <div class="knob-name">Algorithm</div>
+          <div class="knob-value">Clean</div>
+          <div class="knob-desc">Clean mode for high-frequency content — minimal phase distortion keeps the top-end clear.</div>
+        </div>
+        <div class="knob-item k-dynamics">
+          <div class="knob-name">Threshold</div>
+          <div class="knob-value">−12 <span class="unit">dBFS</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:65%"></div></div>
+          <div class="knob-desc">High threshold — only engage on the brightest, most piercing moments.</div>
+        </div>
+        <div class="knob-item k-dynamics">
+          <div class="knob-name">Ratio</div>
+          <div class="knob-value">3:1</div>
+          <div class="knob-bar"><div class="knob-fill" style="width:28%"></div></div>
+          <div class="knob-desc">Moderate. Tame harshness without flattening the energy of the lead.</div>
+        </div>
+        <div class="knob-item k-time">
+          <div class="knob-name">Attack</div>
+          <div class="knob-value">3 <span class="unit">ms</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:12%"></div></div>
+          <div class="knob-desc">Fast — catch the bright harmonic spikes quickly before they ear-fatigue the listener.</div>
+        </div>
+        <div class="knob-item k-time">
+          <div class="knob-name">Release</div>
+          <div class="knob-value">150 <span class="unit">ms</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:50%"></div></div>
+          <div class="knob-desc">Medium release — let the saw breathe between held notes and filter sweeps.</div>
+        </div>
+        <div class="knob-item k-shape">
+          <div class="knob-name">Knee</div>
+          <div class="knob-value">Medium</div>
+          <div class="knob-bar"><div class="knob-fill" style="width:50%"></div></div>
+          <div class="knob-desc">Balanced knee for a natural-sounding compression on harmonic content.</div>
+        </div>
+        <div class="knob-item k-extra">
+          <div class="knob-name">SC LP Filter</div>
+          <div class="knob-value">8 <span class="unit">kHz</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:70%"></div></div>
+          <div class="knob-desc">Low-pass the sidechain at 8kHz so ultra-high aliasing harmonics don't distort the GR curve.</div>
+        </div>
+        <div class="knob-item k-extra">
+          <div class="knob-name">Gain (Output)</div>
+          <div class="knob-value">+2 <span class="unit">dB</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:50%"></div></div>
+          <div class="knob-desc">Push back up. High saws need presence — don't let compression bury them.</div>
+        </div>
+        <div class="knob-item k-extra">
+          <div class="knob-name">Dry/Wet</div>
+          <div class="knob-value">85 <span class="unit">%</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:85%"></div></div>
+          <div class="knob-desc">Mostly wet. 15% dry retains the raw, unprocessed edge of the saw wave.</div>
+        </div>
+      </div>
+      <div class="tip-box">
+        <div class="tip-label">💡 Pro Tip</div>
+        <div class="tip-text">High saws often have resonant filter sweeps. These create sudden volume spikes as the cutoff passes through resonant frequencies. Enable <strong>Lookahead at 2ms</strong> to let the compressor anticipate these spikes. Also, use the <strong>SC EQ</strong> with a bell boost at the resonant frequency — this makes the compressor react specifically to filter peaks.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="instrument-card">
+    <div class="card-header" onclick="toggle(this)">
+      <div class="card-icon">🟡</div>
+      <div class="card-title">Mid Saws <span class="badge badge-warm">PRESENCE</span></div>
+      <div class="card-mode">DENSITY CONTROL</div>
+      <div class="card-toggle">▾</div>
+    </div>
+    <div class="card-body">
+      <div class="knob-grid">
+        <div class="knob-item k-dynamics">
+          <div class="knob-name">Algorithm</div>
+          <div class="knob-value">Classic</div>
+          <div class="knob-desc">Classic adds subtle harmonic saturation — great for mid saws that need warmth and character.</div>
+        </div>
+        <div class="knob-item k-dynamics">
+          <div class="knob-name">Threshold</div>
+          <div class="knob-value">−16 <span class="unit">dBFS</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:57%"></div></div>
+          <div class="knob-desc">Medium threshold — mid saws sit in the heart of the mix, so consistent compression matters.</div>
+        </div>
+        <div class="knob-item k-dynamics">
+          <div class="knob-name">Ratio</div>
+          <div class="knob-value">4:1</div>
+          <div class="knob-bar"><div class="knob-fill" style="width:38%"></div></div>
+          <div class="knob-desc">Firmer ratio. Mid saws can mask other instruments — keep them controlled.</div>
+        </div>
+        <div class="knob-item k-time">
+          <div class="knob-name">Attack</div>
+          <div class="knob-value">10 <span class="unit">ms</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:22%"></div></div>
+          <div class="knob-desc">Medium-fast attack catches initial harmonic bursts from filter openings.</div>
+        </div>
+        <div class="knob-item k-time">
+          <div class="knob-name">Release</div>
+          <div class="knob-value">200 <span class="unit">ms</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:55%"></div></div>
+          <div class="knob-desc">Medium release — keeps mid saws punchy without pumping.</div>
+        </div>
+        <div class="knob-item k-shape">
+          <div class="knob-name">Knee</div>
+          <div class="knob-value">Medium</div>
+          <div class="knob-bar"><div class="knob-fill" style="width:50%"></div></div>
+          <div class="knob-desc">Standard medium knee for balanced control of the mid-frequency content.</div>
+        </div>
+        <div class="knob-item k-extra">
+          <div class="knob-name">SC EQ Bell</div>
+          <div class="knob-value">1–3 <span class="unit">kHz</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:55%"></div></div>
+          <div class="knob-desc">Boost the sidechain here — presence zone. Makes compression respond to the "honky" mid frequencies.</div>
+        </div>
+        <div class="knob-item k-extra">
+          <div class="knob-name">Gain (Output)</div>
+          <div class="knob-value">+3 <span class="unit">dB</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:55%"></div></div>
+          <div class="knob-desc">Restore energy lost from harder compression of the dense mid harmonics.</div>
+        </div>
+        <div class="knob-item k-extra">
+          <div class="knob-name">Dry/Wet</div>
+          <div class="knob-value">100 <span class="unit">%</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:100%"></div></div>
+          <div class="knob-desc">Full wet — mid saws need complete density management in a busy mix.</div>
+        </div>
+      </div>
+      <div class="tip-box">
+        <div class="tip-label">💡 Pro Tip</div>
+        <div class="tip-text">Mid saws in a polyphonic chord stack can build up intense low-mid density (200–600Hz). Use the <strong>SC EQ</strong> in Pro-C2 to boost 300Hz in the sidechain — this makes the compressor specifically tame the boxy buildup that mid saws cause. Result: cleaner chords that don't fight with vocals or lead instruments.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="instrument-card">
+    <div class="card-header" onclick="toggle(this)">
+      <div class="card-icon">🔵</div>
+      <div class="card-title">Low Saws <span class="badge badge-cool">SUB POWER</span></div>
+      <div class="card-mode">SUB CONTROL</div>
+      <div class="card-toggle">▾</div>
+    </div>
+    <div class="card-body">
+      <div class="knob-grid">
+        <div class="knob-item k-dynamics">
+          <div class="knob-name">Algorithm</div>
+          <div class="knob-value">Classic</div>
+          <div class="knob-desc">Classic handles low-frequency content well — accurate GR with no phase issues on subs.</div>
+        </div>
+        <div class="knob-item k-dynamics">
+          <div class="knob-name">Threshold</div>
+          <div class="knob-value">−20 <span class="unit">dBFS</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:50%"></div></div>
+          <div class="knob-desc">Low saws are powerful — set threshold so compression is almost always active.</div>
+        </div>
+        <div class="knob-item k-dynamics">
+          <div class="knob-name">Ratio</div>
+          <div class="knob-value">4:1 to 6:1</div>
+          <div class="knob-bar"><div class="knob-fill" style="width:50%"></div></div>
+          <div class="knob-desc">Firm compression. Low saws can overwhelm mixes — keep them tight and consistent.</div>
+        </div>
+        <div class="knob-item k-time">
+          <div class="knob-name">Attack</div>
+          <div class="knob-value">20 <span class="unit">ms</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:28%"></div></div>
+          <div class="knob-desc">Moderate. Low frequencies are slow cycles — don't attack faster than the waveform itself.</div>
+        </div>
+        <div class="knob-item k-time">
+          <div class="knob-name">Release</div>
+          <div class="knob-value">250 <span class="unit">ms</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:58%"></div></div>
+          <div class="knob-desc">Medium-long. Low saws hold their energy — release must match their sustain length.</div>
+        </div>
+        <div class="knob-item k-shape">
+          <div class="knob-name">Knee</div>
+          <div class="knob-value">Medium-Hard</div>
+          <div class="knob-bar"><div class="knob-fill" style="width:38%"></div></div>
+          <div class="knob-desc">Tighter knee to get a firm handle on sub-bass energy. Control over musicality here.</div>
+        </div>
+        <div class="knob-item k-shape">
+          <div class="knob-name">Lookahead</div>
+          <div class="knob-value">2 <span class="unit">ms</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:18%"></div></div>
+          <div class="knob-desc">Essential for low frequencies — they need extra time for the compressor to react cleanly.</div>
+        </div>
+        <div class="knob-item k-extra">
+          <div class="knob-name">SC HP Filter</div>
+          <div class="knob-value">40 <span class="unit">Hz</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:18%"></div></div>
+          <div class="knob-desc">Remove sub-30Hz infrasound from the sidechain so inaudible vibrations don't distort GR.</div>
+        </div>
+        <div class="knob-item k-extra">
+          <div class="knob-name">Gain (Output)</div>
+          <div class="knob-value">+4 <span class="unit">dB</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:60%"></div></div>
+          <div class="knob-desc">More make-up needed for aggressive compression — restore the low-end weight.</div>
+        </div>
+        <div class="knob-item k-extra">
+          <div class="knob-name">Dry/Wet</div>
+          <div class="knob-value">90 <span class="unit">%</span></div>
+          <div class="knob-bar"><div class="knob-fill" style="width:90%"></div></div>
+          <div class="knob-desc">High wet for control. Low-end uncontrolled in a mix causes everything else to suffer.</div>
+        </div>
+      </div>
+      <div class="tip-box">
+        <div class="tip-label">💡 Pro Tip</div>
+        <div class="tip-text">Low saws are often sidechained to the kick drum (external sidechain) rather than self-compressed — this creates the classic "ducking" movement where the kick punches through the bass layer. In Pro-C2, enable <strong>Ext. SC</strong> and route kick to the sidechain input. Set attack 5ms, release 150ms — this creates breathing room for the kick in the low-end every beat.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== LEGEND ===== -->
+<div class="section" id="legend">
+  <div class="section-intro">
+    Every knob in <strong>FabFilter Pro-C2</strong> explained — what it does, how it interacts, and when to use it. Understanding all controls is what separates good compression from great compression.
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--accent3)"></div> Dynamics Controls</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div> Time Controls</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--accent2)"></div> Shape Controls</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div> Output & Routing</div>
+  </div>
+
+  <div class="instrument-card">
+    <div class="card-header open" onclick="toggle(this)">
+      <div class="card-icon">🎚️</div>
+      <div class="card-title">Complete Pro-C2 Knob Reference</div>
+      <div class="card-mode">ALL CONTROLS</div>
+      <div class="card-toggle">▾</div>
+    </div>
+    <div class="card-body open">
+      <div class="knob-grid">
+        <div class="knob-item k-dynamics">
+          <div class="knob-name">Threshold</div>
+          <div class="knob-value">Sets the level above which compression begins</div>
+          <div class="knob-desc">Lower = more compression triggered. Higher = only loudest peaks compressed. This is where you tell the compressor "start working here."</div>
+        </div>
+        <div class="knob-item k-dynamics">
+          <div class="knob-name">Ratio</div>
+          <div class="knob-value">How hard compression is applied</div>
+          <div class="knob-desc">2:1 = gentle levelling. 4:1 = firm control. 10:1+ = limiting. ∞:1 = hard brick wall. Higher ratio = more squash.</div>
+        </div>
+        <div class="knob-item k-dynamics">
+          <div class="knob-name">Algorithm</div>
+          <div class="knob-value">The character of the compressor</div>
+          <div class="knob-desc">Classic (transparent punch), Clean (linear-phase), Opto (vintage, nonlinear), Bus (glue), Vocal (breath-tracking), Mastering (precision), Safe (lookahead limiting).</div>
+        </div>
+        <div class="knob-item k-time">
+          <div class="knob-name">Attack</div>
+          <div class="knob-value">How fast compression kicks in</div>
+          <div class="knob-desc">Fast (1–10ms) = catches transients, can sound squashed. Slow (30–100ms) = lets transients through, preserves punch. Attack shapes the "hit" feeling.</div>
+        </div>
+        <div class="knob-item k-time">
+          <div class="knob-name">Release</div>
+          <div class="knob-value">How fast compression lets go</div>
+          <div class="knob-desc">Too fast = pumping/breathing. Too slow = compressor stays engaged, squashes everything. Match to the tempo and sustain of the source.</div>
+        </div>
+        <div class="knob-item k-time">
+          <div class="knob-name">Hold</div>
+          <div class="knob-value">Delay before release begins</div>
+          <div class="knob-desc">Keeps compressor "clamped" briefly after the signal drops below threshold. Prevents chattering on drums. Often overlooked but very powerful.</div>
+        </div>
+        <div class="knob-item k-shape">
+          <div class="knob-name">Knee</div>
+          <div class="knob-value">Softness of compression transition</div>
+          <div class="knob-desc">Hard knee = abrupt, precise. Soft knee = gradual, musical. For transparent compression, always use soft. For drum punch, use medium or hard.</div>
+        </div>
+        <div class="knob-item k-shape">
+          <div class="knob-name">Lookahead</div>
+          <div class="knob-value">Pre-read the incoming signal</div>
+          <div class="knob-desc">Lets the compressor "see" peaks before they hit and prepare. Adds latency but prevents transient clipping. Essential for limiting. 0–5ms range.</div>
+        </div>
+        <div class="knob-item k-shape">
+          <div class="knob-name">SC EQ (Sidechain EQ)</div>
+          <div class="knob-value">Frequency-specific compression triggering</div>
+          <div class="knob-desc">Boost a frequency to make compressor more sensitive there. Cut a frequency to ignore it. This is how you do "de-essing", kick-sensitive sidechaining, and frequency-focused compression.</div>
+        </div>
+        <div class="knob-item k-extra">
+          <div class="knob-name">Gain (Output)</div>
+          <div class="knob-value">Make-up gain after compression</div>
+          <div class="knob-desc">Compression reduces level. Output gain restores it. Match compressed output level to bypass level for honest A/B comparison. Louder always sounds better — compensate before judging.</div>
+        </div>
+        <div class="knob-item k-extra">
+          <div class="knob-name">Dry/Wet (Mix)</div>
+          <div class="knob-value">Parallel compression blend</div>
+          <div class="knob-desc">100% = full compression. 50% = half compressed + half original. This is built-in parallel compression. Use below 100% to retain natural dynamics while still adding density.</div>
+        </div>
+        <div class="knob-item k-extra">
+          <div class="knob-name">Stereo Link</div>
+          <div class="knob-value">L/R channel coupling</div>
+          <div class="knob-desc">100% = both channels compress equally (stable stereo image). 0% = each channel independent (can shift stereo field). For most sources, 70–100% is correct.</div>
+        </div>
+        <div class="knob-item k-extra">
+          <div class="knob-name">Gain Reduction Meter</div>
+          <div class="knob-value">How much compression is being applied</div>
+          <div class="knob-desc">The most important visual feedback tool. Watch this constantly. −2 to −4dB = gentle glue. −6 to −10dB = firm control. Beyond −10dB = aggressive limiting territory.</div>
+        </div>
+        <div class="knob-item k-extra">
+          <div class="knob-name">External SC</div>
+          <div class="knob-value">Trigger compression with a different signal</div>
+          <div class="knob-desc">Route kick drum to compress bass. Route a reference track to compress effects. The compressor listens to the sidechain signal but processes the main signal.</div>
+        </div>
+        <div class="knob-item k-extra">
+          <div class="knob-name">SC Listen</div>
+          <div class="knob-value">Audition the sidechain signal</div>
+          <div class="knob-desc">Not a processing knob — a diagnostic tool. Enable it to hear exactly what the compressor is "hearing." Use when setting SC EQ to make sure you're filtering correctly.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- end content -->
+
+<script>
+function toggle(header) {
+  const body = header.nextElementSibling;
+  header.classList.toggle('open');
+  body.classList.toggle('open');
+}
+
+// Tabs
+const tabs = document.querySelectorAll('.tab');
+const sections = document.querySelectorAll('.section');
+
+tabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    tabs.forEach(t => t.classList.remove('active'));
+    sections.forEach(s => s.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(tab.dataset.section).classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
