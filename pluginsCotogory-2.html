@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plugin Category Database</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0c;
+    --bg2: #111115;
+    --bg3: #18181e;
+    --border: rgba(255,255,255,0.07);
+    --border-hover: rgba(255,255,255,0.15);
+    --text: #e8e6f0;
+    --muted: #6b6880;
+    --accent: #7c6af7;
+    --accent2: #c084fc;
+    --accent3: #38bdf8;
+    --green: #34d399;
+    --amber: #fbbf24;
+    --red: #f87171;
+    --mono: 'Space Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  /* NOISE TEXTURE */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+  }
+
+  /* HEADER */
+  header {
+    padding: 60px 40px 40px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    z-index: 1;
+  }
+
+  .header-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+
+  .logo-area h1 {
+    font-family: var(--mono);
+    font-size: clamp(22px, 3vw, 36px);
+    font-weight: 700;
+    letter-spacing: -1px;
+    background: linear-gradient(135deg, #e8e6f0 30%, var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.1;
+  }
+
+  .logo-area p {
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 6px;
+    font-family: var(--mono);
+    letter-spacing: 0.5px;
+  }
+
+  .stats-row {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    text-align: center;
+  }
+
+  .stat-num {
+    font-family: var(--mono);
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+
+  /* SEARCH + FILTER BAR */
+  .toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(10,10,12,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 40px;
+  }
+
+  .toolbar-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .search-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 14px;
+    pointer-events: none;
+  }
+
+  #search {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    padding: 9px 12px 9px 36px;
+    outline: none;
+    transition: border-color .2s;
+  }
+
+  #search:focus { border-color: var(--accent); }
+  #search::placeholder { color: var(--muted); }
+
+  .expand-btn, .collapse-btn {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 9px 14px;
+    cursor: pointer;
+    transition: all .2s;
+    white-space: nowrap;
+  }
+
+  .expand-btn:hover, .collapse-btn:hover {
+    border-color: var(--border-hover);
+    color: var(--text);
+  }
+
+  .count-badge {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 9px 14px;
+    white-space: nowrap;
+  }
+
+  /* MAIN GRID */
+  main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 32px 40px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* CATEGORY CARD */
+  .cat-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 12px;
+    overflow: hidden;
+    transition: border-color .2s;
+  }
+
+  .cat-card:hover { border-color: var(--border-hover); }
+  .cat-card.hidden { display: none; }
+
+  .cat-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 20px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .cat-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 5px;
+    white-space: nowrap;
+  }
+
+  .cat-name {
+    font-size: 15px;
+    font-weight: 600;
+    flex: 1;
+    letter-spacing: -0.2px;
+  }
+
+  .plugin-count {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--bg3);
+    padding: 3px 8px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+  }
+
+  /* COPY BUTTON */
+  .copy-cat-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 5px 10px;
+    cursor: pointer;
+    transition: all .2s;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .copy-cat-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .copy-cat-btn.copied {
+    border-color: var(--green);
+    color: var(--green);
+  }
+
+  .chevron {
+    font-size: 10px;
+    color: var(--muted);
+    transition: transform .25s;
+    flex-shrink: 0;
+  }
+
+  .chevron.open { transform: rotate(90deg); }
+
+  /* PLUGIN BODY */
+  .cat-body {
+    display: none;
+    border-top: 1px solid var(--border);
+    padding: 16px 20px;
+  }
+
+  .cat-body.open { display: block; }
+
+  .cat-body-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .vendor-tabs {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .vendor-tab {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all .15s;
+  }
+
+  .vendor-tab:hover, .vendor-tab.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(124,106,247,0.08);
+  }
+
+  .plugin-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 6px;
+  }
+
+  .plugin-item {
+    font-size: 12.5px;
+    padding: 7px 11px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg3);
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    transition: border-color .15s;
+  }
+
+  .plugin-item:hover { border-color: var(--border-hover); }
+  .plugin-item.highlight { border-color: var(--accent2); background: rgba(192,132,252,0.06); }
+
+  .plugin-name { flex: 1; line-height: 1.3; }
+
+  .vendor-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* VENDOR COLORS */
+  .vd-waves { background: #38bdf8; }
+  .vd-fabfilter { background: #c084fc; }
+  .vd-imageline { background: #34d399; }
+  .vd-soundtoys { background: #fbbf24; }
+  .vd-valhalla { background: #f87171; }
+  .vd-antares { background: #fb923c; }
+  .vd-other { background: #94a3b8; }
+
+  /* LEGEND */
+  .legend {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+    padding: 14px 20px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  /* COLOR ACCENTS PER CATEGORY */
+  .cat-01 .cat-num { background: rgba(248,113,113,0.15); color: #f87171; }
+  .cat-02 .cat-num { background: rgba(56,189,248,0.15); color: #38bdf8; }
+  .cat-03 .cat-num { background: rgba(251,191,36,0.15); color: #fbbf24; }
+  .cat-04 .cat-num { background: rgba(52,211,153,0.15); color: #34d399; }
+  .cat-05 .cat-num { background: rgba(124,106,247,0.15); color: #7c6af7; }
+  .cat-06 .cat-num { background: rgba(192,132,252,0.15); color: #c084fc; }
+  .cat-07 .cat-num { background: rgba(251,146,60,0.15); color: #fb923c; }
+  .cat-08 .cat-num { background: rgba(45,212,191,0.15); color: #2dd4bf; }
+  .cat-09 .cat-num { background: rgba(244,114,182,0.15); color: #f472b6; }
+  .cat-10 .cat-num { background: rgba(148,163,184,0.15); color: #94a3b8; }
+  .cat-11 .cat-num { background: rgba(167,243,208,0.15); color: #6ee7b7; }
+  .cat-12 .cat-num { background: rgba(253,186,116,0.15); color: #fdba74; }
+  .cat-13 .cat-num { background: rgba(147,197,253,0.15); color: #93c5fd; }
+  .cat-14 .cat-num { background: rgba(253,164,175,0.15); color: #fda4af; }
+
+  /* NO RESULTS */
+  .no-results {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 14px;
+    display: none;
+  }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo-area">
+      <h1>Plugin Category Database</h1>
+      <p>FL Studio · Waves · FabFilter · Soundtoys · Valhalla + more</p>
+    </div>
+    <div class="stats-row">
+      <div class="stat"><div class="stat-num" id="total-count">424</div><div class="stat-label">Total Plugins</div></div>
+      <div class="stat"><div class="stat-num">14</div><div class="stat-label">Categories</div></div>
+      <div class="stat"><div class="stat-num">8+</div><div class="stat-label">Vendors</div></div>
+    </div>
+  </div>
+</header>
+
+<div class="toolbar">
+  <div class="toolbar-inner">
+    <div class="search-wrap">
+      <span class="search-icon">⌕</span>
+      <input type="text" id="search" placeholder="Search plugins, vendors…" oninput="doSearch(this.value)">
+    </div>
+    <button class="expand-btn" onclick="expandAll()">Expand All</button>
+    <button class="collapse-btn" onclick="collapseAll()">Collapse All</button>
+    <div class="count-badge" id="match-badge">All 424</div>
+  </div>
+</div>
+
+<main>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot vd-waves"></div>Waves</div>
+    <div class="legend-item"><div class="legend-dot vd-fabfilter"></div>FabFilter</div>
+    <div class="legend-item"><div class="legend-dot vd-imageline"></div>Image-Line</div>
+    <div class="legend-item"><div class="legend-dot vd-soundtoys"></div>Soundtoys</div>
+    <div class="legend-item"><div class="legend-dot vd-valhalla"></div>Valhalla DSP</div>
+    <div class="legend-item"><div class="legend-dot vd-antares"></div>Antares</div>
+    <div class="legend-item"><div class="legend-dot vd-other"></div>Other</div>
+  </div>
+
+  <div id="cats"></div>
+  <div class="no-results" id="no-results">No plugins found for that search.</div>
+
+</main>
+
+<script>
+const data = [
+  {
+    num:"01", name:"Dynamics", cls:"cat-01",
+    plugins:[
+      {n:"API 2500",v:"waves"},{n:"CLA-2A",v:"waves"},{n:"CLA-3A",v:"waves"},{n:"CLA-76",v:"waves"},
+      {n:"C1 Comp",v:"waves"},{n:"C1 Comp-Gate",v:"waves"},{n:"C1 Comp-SC",v:"waves"},
+      {n:"C4",v:"waves"},{n:"C6",v:"waves"},{n:"C6 SideChain",v:"waves"},
+      {n:"dbx 160",v:"waves"},{n:"DPR-402",v:"waves"},{n:"EMO-D5",v:"waves"},
+      {n:"H-Comp",v:"waves"},
+      {n:"IDX Intelligent Dynamics",v:"waves"},{n:"IDX Live Intelligent Dynamics",v:"waves"},
+      {n:"L3 Multimaximizer",v:"waves"},{n:"L3 Ultramaximizer",v:"waves"},
+      {n:"L3-LL Multimaximizer",v:"waves"},{n:"L3-LL Ultra",v:"waves"},
+      {n:"PuigChild 660",v:"waves"},{n:"PuigChild 670",v:"waves"},
+      {n:"RCompressor",v:"waves"},{n:"Renaissance Axx",v:"waves"},
+      {n:"Scheps Omni Channel 2",v:"waves"},{n:"Smack Attack",v:"waves"},
+      {n:"SSL Comp",v:"waves"},{n:"SSL G-Channel",v:"waves"},
+      {n:"VComp",v:"waves"},{n:"C1 Gate",v:"waves"},
+      {n:"InTrigger",v:"waves"},{n:"InTrigger Live",v:"waves"},
+      {n:"Spherix Compressor",v:"waves"},{n:"Spherix Limiter",v:"waves"},{n:"PSE",v:"waves"},
+      {n:"TransX Multi",v:"waves"},{n:"TransX Wide",v:"waves"},
+      {n:"Fruity Compressor",v:"imageline"},{n:"Fruity Multiband Compressor",v:"imageline"},
+      {n:"Maximus",v:"imageline"},{n:"Transient Processor",v:"imageline"},
+      {n:"FabFilter Pro-C",v:"fabfilter"},{n:"FabFilter Pro-C 2",v:"fabfilter"},
+      {n:"FabFilter Pro-C 3",v:"fabfilter"},{n:"FabFilter Pro-G",v:"fabfilter"},
+      {n:"FabFilter Pro-MB",v:"fabfilter"},
+      {n:"soothe2",v:"other"},
+    ]
+  },
+  {
+    num:"02", name:"EQ / Filtering", cls:"cat-02",
+    plugins:[
+      {n:"API 550A",v:"waves"},{n:"API 550B",v:"waves"},{n:"API 560",v:"waves"},
+      {n:"AudioTrack",v:"waves"},{n:"EMO Q4",v:"waves"},{n:"F6",v:"waves"},{n:"F6 RTA",v:"waves"},
+      {n:"GEQ Classic",v:"waves"},{n:"GEQ Modern",v:"waves"},
+      {n:"H-EQ",v:"waves"},{n:"H-EQ Light",v:"waves"},
+      {n:"LinEQ Broadband",v:"waves"},{n:"LinEQ Lowband",v:"waves"},
+      {n:"PuigTec EQP1A",v:"waves"},{n:"PuigTec MEQ5",v:"waves"},
+      {n:"Q2",v:"waves"},{n:"Q3",v:"waves"},{n:"Q4",v:"waves"},{n:"Q6",v:"waves"},
+      {n:"Q8",v:"waves"},{n:"Q10",v:"waves"},{n:"Q-Clone",v:"waves"},{n:"Q-Capture",v:"waves"},
+      {n:"RChannel",v:"waves"},
+      {n:"REQ2",v:"waves"},{n:"REQ4",v:"waves"},{n:"REQ6",v:"waves"},
+      {n:"Scheps 73",v:"waves"},
+      {n:"SSL EQ",v:"waves"},{n:"SSL EV2 Channel",v:"waves"},{n:"SSL Channel",v:"waves"},
+      {n:"VEQ3",v:"waves"},{n:"VEQ4",v:"waves"},
+      {n:"Curves AQ",v:"waves"},{n:"Curves AQ Live",v:"waves"},
+      {n:"Curves Equator",v:"waves"},{n:"Curves Equator Live",v:"waves"},
+      {n:"MetaFilter",v:"waves"},
+      {n:"Fruity Parametric EQ",v:"imageline"},{n:"Fruity Parametric EQ 2",v:"imageline"},
+      {n:"Fruity 7 Band EQ",v:"imageline"},{n:"Fruity Fast LP",v:"imageline"},
+      {n:"Fruity Filter",v:"imageline"},{n:"Fruity Free Filter",v:"imageline"},
+      {n:"EQUO",v:"imageline"},
+      {n:"FabFilter Pro-Q",v:"fabfilter"},{n:"FabFilter Pro-Q 2",v:"fabfilter"},
+      {n:"FabFilter Pro-Q 3",v:"fabfilter"},{n:"FabFilter Pro-Q 4",v:"fabfilter"},
+      {n:"FabFilter Pro-DS",v:"fabfilter"},{n:"FabFilter Simplon",v:"fabfilter"},
+      {n:"FabFilter Micro",v:"fabfilter"},
+      {n:"FabFilter Volcano 2",v:"fabfilter"},{n:"FabFilter Volcano 3",v:"fabfilter"},
+    ]
+  },
+  {
+    num:"03", name:"Saturation & Drive", cls:"cat-03",
+    plugins:[
+      {n:"Abbey Road Saturator",v:"waves"},{n:"Abbey Road RS124",v:"waves"},
+      {n:"Magma BB Tubes",v:"waves"},{n:"Magma Channel Strip",v:"waves"},
+      {n:"Magma Lil Tube",v:"waves"},{n:"Magma Springs",v:"waves"},
+      {n:"MDMX Fuzz",v:"waves"},{n:"MDMX Overdrive",v:"waves"},{n:"MDMX Screamer",v:"waves"},
+      {n:"Berzerk Distortion",v:"waves"},
+      {n:"GTR Amp",v:"waves"},{n:"GTR Stomp 2",v:"waves"},{n:"GTR Stomp 4",v:"waves"},
+      {n:"GTR Stomp 6",v:"waves"},{n:"GTR Tool Rack",v:"waves"},{n:"GTR Solo Tool Rack",v:"waves"},
+      {n:"PRS Archon",v:"waves"},{n:"PRS Dallas",v:"waves"},{n:"PRS V9",v:"waves"},
+      {n:"Scheps Parallel Particles",v:"waves"},
+      {n:"Aphex Vintage Exciter",v:"waves"},{n:"Retro Fi",v:"waves"},
+      {n:"Fruity Fast Dist",v:"imageline"},{n:"Fruity Blood Overdrive",v:"imageline"},
+      {n:"Fruity WaveShaper",v:"imageline"},{n:"Distructor",v:"imageline"},
+      {n:"Decapitator",v:"soundtoys"},{n:"Devil-Loc",v:"soundtoys"},
+      {n:"Devil-Loc Deluxe",v:"soundtoys"},{n:"Radiator",v:"soundtoys"},
+      {n:"Little Radiator",v:"soundtoys"},
+      {n:"FabFilter Saturn",v:"fabfilter"},{n:"FabFilter Saturn 2",v:"fabfilter"},
+    ]
+  },
+  {
+    num:"04", name:"Gain & Metering", cls:"cat-04",
+    plugins:[
+      {n:"PAZ Analyzer",v:"waves"},{n:"PAZ Frequency",v:"waves"},
+      {n:"PAZ Meters",v:"waves"},{n:"PAZ Position",v:"waves"},
+      {n:"VU Meter",v:"waves"},{n:"WLM Meter",v:"waves"},{n:"WLM Plus",v:"waves"},
+      {n:"IDR360",v:"waves"},
+      {n:"Fruity dB Meter",v:"imageline"},{n:"Fruity Peak Controller",v:"imageline"},
+      {n:"Wave Candy",v:"imageline"},{n:"Fruity Spectroman",v:"imageline"},
+      {n:"SPAN",v:"other"},
+    ]
+  },
+  {
+    num:"05", name:"Reverb", cls:"cat-05",
+    plugins:[
+      {n:"Abbey Road Chambers",v:"waves"},{n:"Abbey Road Plates",v:"waves"},
+      {n:"H-Reverb",v:"waves"},{n:"H-Reverb Long",v:"waves"},
+      {n:"IR1",v:"waves"},{n:"IR1 Full",v:"waves"},{n:"IR1 Efficient",v:"waves"},
+      {n:"IR-L",v:"waves"},{n:"IR-Live",v:"waves"},{n:"IR360",v:"waves"},
+      {n:"RVerb",v:"waves"},{n:"TrueVerb",v:"waves"},{n:"MannyM Reverb",v:"waves"},
+      {n:"Fruity Reeverb",v:"imageline"},{n:"Fruity Reeverb 2",v:"imageline"},
+      {n:"Fruity Convolver",v:"imageline"},{n:"Luxeverb",v:"imageline"},
+      {n:"FabFilter Pro-R",v:"fabfilter"},{n:"FabFilter Pro-R 2",v:"fabfilter"},
+      {n:"Little Plate",v:"soundtoys"},
+      {n:"ValhallaRoom",v:"valhalla"},{n:"ValhallaPlate",v:"valhalla"},
+      {n:"ValhallaVintageVerb",v:"valhalla"},{n:"ValhallaShimmer",v:"valhalla"},
+      {n:"ValhallaFutureVerb",v:"valhalla"},{n:"ValhallaSupermassive",v:"valhalla"},
+    ]
+  },
+  {
+    num:"06", name:"Delay", cls:"cat-06",
+    plugins:[
+      {n:"H-Delay",v:"waves"},{n:"MannyM Delay",v:"waves"},
+      {n:"SuperTap 2-Taps",v:"waves"},{n:"SuperTap 6-Taps",v:"waves"},
+      {n:"Abbey Road Reel ADT",v:"waves"},{n:"Doubler2",v:"waves"},{n:"Doubler4",v:"waves"},
+      {n:"Fruity Delay",v:"imageline"},{n:"Fruity Delay 2",v:"imageline"},
+      {n:"Fruity Delay 3",v:"imageline"},{n:"Fruity Delay Bank",v:"imageline"},
+      {n:"Multiband Delay",v:"imageline"},
+      {n:"EchoBoy",v:"soundtoys"},{n:"PrimalTap",v:"soundtoys"},
+      {n:"Little PrimalTap",v:"soundtoys"},{n:"Crystallizer",v:"soundtoys"},
+      {n:"FabFilter Timeless 2",v:"fabfilter"},{n:"FabFilter Timeless 3",v:"fabfilter"},
+      {n:"ValhallaDelay",v:"valhalla"},{n:"ValhallaFreqEcho",v:"valhalla"},
+    ]
+  },
+  {
+    num:"07", name:"Modulation FX", cls:"cat-07",
+    plugins:[
+      {n:"MondoMod",v:"waves"},{n:"MetaFlanger",v:"waves"},
+      {n:"MultiMod Rack",v:"waves"},{n:"Brauer Motion",v:"waves"},{n:"Enigma",v:"waves"},
+      {n:"Fruity Chorus",v:"imageline"},{n:"Fruity Flanger",v:"imageline"},
+      {n:"Fruity Flangus",v:"imageline"},{n:"Fruity Phaser",v:"imageline"},
+      {n:"Vintage Chorus",v:"imageline"},{n:"Vintage Phaser",v:"imageline"},
+      {n:"Frequency Shifter",v:"imageline"},{n:"Fruity Stereo Shaper",v:"imageline"},
+      {n:"Hyper Chorus",v:"imageline"},{n:"Spreader",v:"imageline"},
+      {n:"FilterFreak1",v:"soundtoys"},{n:"FilterFreak2",v:"soundtoys"},
+      {n:"MicroShift",v:"soundtoys"},{n:"Little MicroShift",v:"soundtoys"},
+      {n:"PhaseMistress",v:"soundtoys"},{n:"Tremolator",v:"soundtoys"},{n:"PanMan",v:"soundtoys"},
+      {n:"FabFilter Twin 2",v:"fabfilter"},{n:"FabFilter Twin 3",v:"fabfilter"},
+      {n:"ValhallaUberMod",v:"valhalla"},{n:"ValhallaSpaceModulator",v:"valhalla"},
+      {n:"ShaperBox 2",v:"other"},{n:"ShaperBox 3",v:"other"},
+      {n:"EffectRack",v:"soundtoys"},
+    ]
+  },
+  {
+    num:"08", name:"Stereo & Imaging", cls:"cat-08",
+    plugins:[
+      {n:"S1 Imager",v:"waves"},{n:"S1 MS Matrix",v:"waves"},{n:"S1 Shuffler",v:"waves"},
+      {n:"S360 Imager",v:"waves"},{n:"S360 Panner",v:"waves"},
+      {n:"Center",v:"waves"},{n:"UM225",v:"waves"},
+      {n:"PS22 Split",v:"waves"},{n:"PS22 Spread",v:"waves"},{n:"PS22 XSplit",v:"waves"},
+      {n:"M360 Manager",v:"waves"},{n:"M360 Mixdown",v:"waves"},
+      {n:"R360",v:"waves"},{n:"C360",v:"waves"},
+      {n:"Nx",v:"waves"},{n:"Nx Ambisonics",v:"waves"},
+      {n:"Nx Germano Studios",v:"waves"},{n:"Nx Ocean Way Nashville",v:"waves"},
+      {n:"B360 AmbiX FuMa Quad",v:"waves"},{n:"B360 FuMa AmbiX Quad",v:"waves"},
+      {n:"B360 Mono Quad",v:"waves"},{n:"B360 Stereo Quad",v:"waves"},
+      {n:"B360 5.0 Quad",v:"waves"},{n:"B360 5.1 Quad",v:"waves"},{n:"B360 7.1 Quad",v:"waves"},
+      {n:"DTS Neural DownMix 0.5.1",v:"waves"},{n:"DTS Neural DownMix 5.1",v:"waves"},
+      {n:"DTS Neural DownMix 7.1",v:"waves"},{n:"DTS Neural Mono Decoder",v:"waves"},
+      {n:"DTS Neural UpMix 5.1 to 7.1",v:"waves"},
+      {n:"DTS Neural UpMix Stereo to 5.1",v:"waves"},
+      {n:"DTS Neural UpMix Stereo to 7.1",v:"waves"},
+      {n:"DTS Neural UpMix Stereo to Quad",v:"waves"},
+      {n:"Immersive Wrapper",v:"waves"},{n:"LFE360",v:"waves"},
+      {n:"InPhase",v:"waves"},{n:"InPhase Live",v:"waves"},
+      {n:"InPhase LT",v:"waves"},{n:"InPhase LT Live",v:"waves"},
+      {n:"Dorough 360",v:"waves"},
+      {n:"Fruity Stereo Enhancer",v:"imageline"},{n:"Fruity Balance",v:"imageline"},
+    ]
+  },
+  {
+    num:"09", name:"Pitch & Tuning", cls:"cat-09",
+    plugins:[
+      {n:"SoundShifter Pitch",v:"waves"},{n:"UltraPitch",v:"waves"},
+      {n:"Waves Tune",v:"waves"},{n:"Waves Tune Real-Time",v:"waves"},{n:"Vocal Bender",v:"waves"},
+      {n:"Key Detector",v:"waves"},
+      {n:"Newtone",v:"imageline"},{n:"Newtime",v:"imageline"},
+      {n:"Pitch Shifter",v:"imageline"},
+      {n:"Auto-Tune Pro",v:"antares"},{n:"Auto-Key 2",v:"antares"},
+      {n:"Little AlterBoy",v:"soundtoys"},
+      {n:"RC-20 Retro Color",v:"other"},
+    ]
+  },
+  {
+    num:"10", name:"Noise & Restoration", cls:"cat-10",
+    plugins:[
+      {n:"X-Noise",v:"waves"},{n:"X-Click",v:"waves"},{n:"X-Crackle",v:"waves"},
+      {n:"X-Hum",v:"waves"},{n:"X-FDBK",v:"waves"},
+      {n:"Z-Noise",v:"waves"},{n:"WNS",v:"waves"},{n:"DeBreath",v:"waves"},
+      {n:"Clarity Vx",v:"waves"},{n:"Clarity Vx Pro",v:"waves"},
+      {n:"Clarity Vx DeReverb",v:"waves"},{n:"Clarity Vx DeReverb Pro",v:"waves"},
+      {n:"Fruity Phase Inverter",v:"imageline"},
+    ]
+  },
+  {
+    num:"11", name:"Vocal FX", cls:"cat-11",
+    plugins:[
+      {n:"DeEsser",v:"waves"},{n:"RDeEsser",v:"waves"},
+      {n:"Sibilance",v:"waves"},{n:"Sibilance Live",v:"waves"},
+      {n:"Silk Vocal",v:"waves"},{n:"Silk Vocal Live",v:"waves"},
+      {n:"Vocal Rider",v:"waves"},{n:"Butch Vig Vocals",v:"waves"},
+      {n:"RVox",v:"waves"},{n:"OVox",v:"waves"},{n:"OVox Instrument",v:"waves"},
+      {n:"CLA Vocals",v:"waves"},{n:"JJP Vocals",v:"waves"},
+      {n:"MannyM Triple D",v:"waves"},{n:"Maserati VX1",v:"waves"},
+      {n:"GW VoiceCentric",v:"waves"},{n:"Sync Vx",v:"waves"},
+      {n:"Fruity Vocoder",v:"imageline"},{n:"Vocodex",v:"imageline"},
+      {n:"Little AlterBoy",v:"soundtoys"},
+      {n:"Auto-Tune Pro",v:"antares"},
+    ]
+  },
+  {
+    num:"12", name:"Master Bus / Mastering", cls:"cat-12",
+    plugins:[
+      {n:"Abbey Road TG Mastering Chain",v:"waves"},
+      {n:"L1 Limiter",v:"waves"},{n:"L1 Ultramaximizer",v:"waves"},
+      {n:"L2",v:"waves"},{n:"L2-SC",v:"waves"},{n:"L316",v:"waves"},{n:"L360",v:"waves"},
+      {n:"LinMB",v:"waves"},{n:"MaxxBass",v:"waves"},{n:"MaxxVolume",v:"waves"},
+      {n:"MV2",v:"waves"},{n:"MV360",v:"waves"},
+      {n:"NLS Buss",v:"waves"},{n:"NLS Channel",v:"waves"},
+      {n:"SSL G-Channel",v:"waves"},{n:"Vitamin",v:"waves"},{n:"W43",v:"waves"},
+      {n:"Waves StudioRack",v:"waves"},{n:"CLA MixDown",v:"waves"},
+      {n:"GW MixCentric",v:"waves"},{n:"GW PianoCentric",v:"waves"},
+      {n:"GW ToneCentric",v:"waves"},{n:"Playlist Rider",v:"waves"},
+      {n:"IDR360",v:"waves"},
+      {n:"FabFilter Pro-L",v:"fabfilter"},{n:"FabFilter Pro-L 2",v:"fabfilter"},
+      {n:"Fruity Limiter",v:"imageline"},{n:"Fruity Soft Clipper",v:"imageline"},
+      {n:"Maximus",v:"imageline"},
+      {n:"Fresh Air",v:"other"},
+    ]
+  },
+  {
+    num:"13", name:"Utility & Routing", cls:"cat-13",
+    plugins:[
+      {n:"TRACT",v:"waves"},{n:"Flow Motion",v:"waves"},{n:"Feedback Hunter",v:"waves"},
+      {n:"Sub Align",v:"waves"},{n:"Submarine",v:"waves"},{n:"NS1",v:"waves"},
+      {n:"StudioVerse Effects",v:"waves"},{n:"StudioVerse Instruments",v:"waves"},
+      {n:"COSMOS Sample Finder",v:"waves"},
+      {n:"Waves Harmony",v:"waves"},{n:"Waves Stream",v:"waves"},
+      {n:"Fruity Send",v:"imageline"},{n:"Fruity Mute 2",v:"imageline"},
+      {n:"Fruity Envelope Controller",v:"imageline"},{n:"Fruity Formula Controller",v:"imageline"},
+      {n:"Fruity Peak Controller",v:"imageline"},{n:"Fruity Keyboard Controller",v:"imageline"},
+      {n:"Fruity Voltage Controller",v:"imageline"},{n:"Fruity X-Y Controller",v:"imageline"},
+      {n:"Fruity X-Y-Z Controller",v:"imageline"},
+      {n:"Fruity NoteBook",v:"imageline"},{n:"Fruity NoteBook 2",v:"imageline"},
+      {n:"Fruity HTML NoteBook",v:"imageline"},{n:"Fruity Big Clock",v:"imageline"},
+      {n:"Fruity Wrapper",v:"imageline"},{n:"Patcher",v:"imageline"},
+      {n:"MIDI Out",v:"imageline"},{n:"Fruity Video Player",v:"imageline"},
+      {n:"Control Surface",v:"imageline"},{n:"Dashboard",v:"imageline"},
+      {n:"VFX Color Mapper",v:"imageline"},{n:"VFX Envelope",v:"imageline"},
+      {n:"VFX Key Mapper",v:"imageline"},{n:"VFX Keyboard Splitter",v:"imageline"},
+      {n:"VFX Level Scaler",v:"imageline"},{n:"VFX Script",v:"imageline"},
+      {n:"VFX Sequencer",v:"imageline"},
+      {n:"Wave Traveller",v:"imageline"},{n:"Fruity Scratcher",v:"imageline"},
+      {n:"GTR Tuner",v:"waves"},{n:"Razer Chroma",v:"imageline"},
+      {n:"ReWired",v:"imageline"},{n:"Frequency Splitter",v:"imageline"},
+      {n:"ZGameEditor Visualizer",v:"imageline"},
+      {n:"FL Studio Mobile",v:"imageline"},{n:"FL Studio Mobile Rack",v:"imageline"},
+      {n:"FL Studio Mobile Rack FX",v:"imageline"},
+    ]
+  },
+  {
+    num:"14", name:"Creative & Sound Design", cls:"cat-14",
+    plugins:[
+      {n:"Doppler",v:"waves"},{n:"Kaleidoscopes",v:"waves"},{n:"Saphira",v:"waves"},
+      {n:"Space Rider",v:"waves"},{n:"LoFi Space",v:"waves"},{n:"CODEx",v:"waves"},
+      {n:"CLA EchoSphere",v:"waves"},{n:"Abbey Road Vinyl",v:"waves"},
+      {n:"Waves Gemstones",v:"waves"},
+      {n:"Crystallizer",v:"soundtoys"},{n:"EffectRack",v:"soundtoys"},
+      {n:"Fruity Granulizer",v:"imageline"},{n:"Fruity Love Philter",v:"imageline"},
+      {n:"Fruity Dance",v:"imageline"},{n:"Fruity DrumSynth Live",v:"imageline"},
+      {n:"Fruity DX10",v:"imageline"},{n:"Gross Beat",v:"imageline"},
+      {n:"Hardcore",v:"imageline"},{n:"Effector",v:"imageline"},
+      {n:"FabFilter One",v:"fabfilter"},
+      {n:"ValhallaSpaceModulator",v:"valhalla"},
+      {n:"RC-20 Retro Color",v:"other"},
+      {n:"Abbey Road J37 Tape",v:"waves"},
+    ]
+  },
+];
+
+const vendorMap = {
+  waves:"Waves", fabfilter:"FabFilter", imageline:"Image-Line",
+  soundtoys:"Soundtoys", valhalla:"Valhalla DSP", antares:"Antares", other:"Other"
+};
+
+function vendorDotClass(v) {
+  return "vendor-dot vd-" + v;
+}
+
+function buildCards() {
+  const container = document.getElementById('cats');
+  container.innerHTML = '';
+  data.forEach((cat, idx) => {
+    const card = document.createElement('div');
+    card.className = `cat-card ${cat.cls}`;
+    card.id = `card-${idx}`;
+
+    const vendors = [...new Set(cat.plugins.map(p => p.v))];
+
+    card.innerHTML = `
+      <div class="cat-header" onclick="toggleCard(${idx})">
+        <span class="cat-num">${cat.num}</span>
+        <span class="cat-name">${cat.name}</span>
+        <span class="plugin-count" id="count-${idx}">${cat.plugins.length}</span>
+        <button class="copy-cat-btn" id="copybtn-${idx}" onclick="copyCategory(event, ${idx})" title="Copy all plugin names">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          COPY
+        </button>
+        <span class="chevron" id="chev-${idx}">▶</span>
+      </div>
+      <div class="cat-body" id="body-${idx}">
+        <div class="cat-body-header">
+          <div class="vendor-tabs" id="vtabs-${idx}">
+            <span class="vendor-tab active" onclick="filterVendor(event, ${idx}, 'all')">All</span>
+            ${vendors.map(v => `<span class="vendor-tab" onclick="filterVendor(event, ${idx}, '${v}')">${vendorMap[v]||v}</span>`).join('')}
+          </div>
+        </div>
+        <div class="plugin-grid" id="grid-${idx}">
+          ${cat.plugins.map((p,pi) => `
+            <div class="plugin-item" data-vendor="${p.v}" data-idx="${pi}" id="plug-${idx}-${pi}">
+              <span class="plugin-name">${p.n}</span>
+              <span class="${vendorDotClass(p.v)}" title="${vendorMap[p.v]||p.v}"></span>
+            </div>
+          `).join('')}
+        </div>
+      </div>`;
+    container.appendChild(card);
+  });
+}
+
+function toggleCard(idx) {
+  const body = document.getElementById(`body-${idx}`);
+  const chev = document.getElementById(`chev-${idx}`);
+  const open = body.classList.contains('open');
+  body.classList.toggle('open', !open);
+  chev.classList.toggle('open', !open);
+}
+
+function expandAll() {
+  data.forEach((_, idx) => {
+    const card = document.getElementById(`card-${idx}`);
+    if (!card.classList.contains('hidden')) {
+      document.getElementById(`body-${idx}`).classList.add('open');
+      document.getElementById(`chev-${idx}`).classList.add('open');
+    }
+  });
+}
+
+function collapseAll() {
+  data.forEach((_, idx) => {
+    document.getElementById(`body-${idx}`).classList.remove('open');
+    document.getElementById(`chev-${idx}`).classList.remove('open');
+  });
+}
+
+function filterVendor(e, idx, vendor) {
+  e.stopPropagation();
+  document.querySelectorAll(`#vtabs-${idx} .vendor-tab`).forEach(t => t.classList.remove('active'));
+  e.target.classList.add('active');
+  document.querySelectorAll(`#grid-${idx} .plugin-item`).forEach(el => {
+    el.style.display = (vendor === 'all' || el.dataset.vendor === vendor) ? '' : 'none';
+  });
+}
+
+function copyCategory(e, idx) {
+  e.stopPropagation();
+  const cat = data[idx];
+  const text = `${cat.num} - ${cat.name}\n${'─'.repeat(30)}\n${cat.plugins.map(p => p.n).join('\n')}`;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById(`copybtn-${idx}`);
+    btn.classList.add('copied');
+    btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> COPIED!`;
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> COPY`;
+    }, 2000);
+  });
+}
+
+function doSearch(q) {
+  q = q.toLowerCase().trim();
+  let total = 0;
+  let showing = 0;
+  data.forEach((cat, idx) => {
+    const card = document.getElementById(`card-${idx}`);
+    let catMatch = 0;
+    cat.plugins.forEach((p, pi) => {
+      const el = document.getElementById(`plug-${idx}-${pi}`);
+      const match = !q || p.n.toLowerCase().includes(q)
+        || cat.name.toLowerCase().includes(q)
+        || (vendorMap[p.v]||'').toLowerCase().includes(q);
+      el.classList.toggle('highlight', !!q && match);
+      el.style.display = '';
+      if (match) catMatch++;
+      total++;
+    });
+    if (q) {
+      // show/hide based on match
+      let hasAny = cat.plugins.some(p =>
+        p.n.toLowerCase().includes(q) ||
+        cat.name.toLowerCase().includes(q) ||
+        (vendorMap[p.v]||'').toLowerCase().includes(q)
+      );
+      card.classList.toggle('hidden', !hasAny);
+      if (hasAny) {
+        document.getElementById(`body-${idx}`).classList.add('open');
+        document.getElementById(`chev-${idx}`).classList.add('open');
+        showing += catMatch;
+      }
+    } else {
+      card.classList.remove('hidden');
+      showing = total;
+    }
+    document.getElementById(`count-${idx}`).textContent = q ? catMatch : cat.plugins.length;
+  });
+
+  const badge = document.getElementById('match-badge');
+  const nr = document.getElementById('no-results');
+  if (q) {
+    badge.textContent = `${showing} match`;
+    const anyVisible = data.some((cat, idx) => !document.getElementById(`card-${idx}`).classList.contains('hidden'));
+    nr.style.display = anyVisible ? 'none' : 'block';
+  } else {
+    badge.textContent = `All 424`;
+    nr.style.display = 'none';
+  }
+}
+
+buildCards();
+</script>
+</body>
+</html>
